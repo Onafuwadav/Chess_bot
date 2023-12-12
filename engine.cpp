@@ -39,6 +39,7 @@ struct Pos {
 };
 
 struct ChessBoard {
+    enum class CheckStatus { None, Check, Checkmate };
     enum class Turn { white, black } turn;
     enum class Piece { king, queen, white_pawn, black_pawn, rook, bishop, knight }; // Defining chess piece types 
     static std::map<Piece, int> pieceValues; // Map to hold values for each piece and their values
@@ -77,9 +78,21 @@ struct ChessBoard {
         std::vector<Pos> allowed = possibleMoves(from, LastMoveTo, LastMoveFrom, LastMove[LastMoveTo]);
         if (find(allowed.begin(), allowed.end(), to) == allowed.end())
             return false;
+
+        // check for en-passant
+         if((LastMove[LastMoveTo] == Piece::white_pawn || LastMove[LastMoveTo] == Piece::black_pawn) && (moverPieces()[from] == Piece::white_pawn || moverPieces()[from] == Piece::black_pawn)
+          && (!(white_pieces.count(to) || black_pieces.count(to))) && (LastMoveTo.x == from.x - 1 || LastMoveTo.x == from.x + 1) && (LastMoveTo.y == to.y)){
+            if(turn == Turn::white)
+                opponentPieces().erase(Pos(to.x, to.y-1));
+            else
+                opponentPieces().erase(Pos(to.x, to.y+1));
+         }
+
+        // save last move made
         LastMoveTo = to;
         LastMoveFrom = from;
         LastMove = moverPieces();
+
         opponentPieces().erase(to);
         moverPieces()[to] = moverPieces()[from];
         moverPieces().erase(from);
@@ -102,6 +115,13 @@ struct ChessBoard {
 
         // Lambda to add a move to the list of possible moves
         auto addMove = [&](int dx, int dy) -> bool {
+            // change this so you cant do a move that puts you in check
+
+
+
+
+
+
             if (isFree(dx, dy) || isOpponent(dx, dy)) {
                 moves.push_back(Pos(from, dx, dy));
                 return true;
@@ -115,7 +135,6 @@ struct ChessBoard {
 
         // Get the type of piece at 'from' position
         auto moving_piece = moverPieces()[from];
-
         // Check possible moves based on the type of piece
         switch (moving_piece) {
         // Calculate moves for black pawn
@@ -126,9 +145,9 @@ struct ChessBoard {
             if (isOpponent(1, -1)) addMove(1, -1);
 
             // En-passant for black
-            if (LastTo.y == 4 && Lastfrom.y == 2 && from.y == 5 && (LastTo.x == from.x + 1 || LastTo.x == from.x - 1)) {
+            if (LastTo.y == 4 && Lastfrom.y == 2 && from.y == 4 && lastpiece == Piece::white_pawn) {
                 if (LastTo.x == from.x - 1 || LastTo.x == from.x + 1) {
-                    moves.push_back(Pos(LastTo.x, 6));
+                    moves.push_back(Pos(LastTo.x, 3));
                 }
             }
             break;
@@ -139,6 +158,13 @@ struct ChessBoard {
             if (isFree(0, 1) && isFree(0, 2) && from.y == 2) addMove(0, 2);
             if (isOpponent(-1, 1)) addMove(-1, 1);
             if (isOpponent(1, 1)) addMove(1, 1);
+
+            // En-passant for white
+            if (LastTo.y == 7 && Lastfrom.y == 5 && from.y == 5 && lastpiece == Piece::black_pawn) {
+                if (LastTo.x == from.x - 1 || LastTo.x == from.x + 1) {
+                    moves.push_back(Pos(LastTo.x, 6));
+                }
+            }
             break;
 
         // Calculate moves for knight
@@ -173,9 +199,67 @@ struct ChessBoard {
             for (int n = 1; n < 9 && addMove(-n, -n) && !isOpponent(-n, -n); ++n);
             break;
         }
-
         return moves;
     }
+
+    bool isKingUnderAttack(ChessBoard& board, Turn whichKing) {
+        Piece kingPiece = Piece::king;
+        Turn opponentTurn = whichKing;
+
+        Pos kingPos;
+        for (const auto& piece : board.opponentPieces()) {
+            if (piece.second == kingPiece) {
+                kingPos = piece.first;
+                break;
+            }
+        }
+
+        for (const auto& piece : board.moverPieces()) {
+            std::vector<Pos> currentMoves = possibleMoves(piece.first, LastMoveTo, LastMoveFrom, LastMove[LastMoveTo]);
+
+            // Check if the square to check is among the current possible moves
+            if (std::find(currentMoves.begin(), currentMoves.end(), kingPos) != currentMoves.end()) {
+                return true;
+            } 
+            else
+            return false;
+        }
+    }
+
+    CheckStatus StatusCheck(ChessBoard& board) {        
+        Piece kingPiece = Piece::king;
+        Pos kingPos;
+        for (const auto& piece : board.opponentPieces()) {
+            if (piece.second == kingPiece) {
+                kingPos = piece.first;
+                break;
+            }
+        }
+
+        // check for checkmate
+        if ( isKingUnderAttack(board, turn) ) {
+            bool canEscape = false; // Assuming the king can escape
+            // Check if the king can move to a safe position
+            for (const auto& move : board.possibleMoves(kingPos, board.LastMoveTo, board.LastMoveFrom, LastMove[LastMoveTo])) {
+                if (!isKingUnderAttack(board, turn)) {
+                    canEscape = true; // King can escape
+                    break;
+                }
+            }
+
+            if (!canEscape) {
+                // King is under checkmate
+                return CheckStatus::Checkmate;
+                std::cout << "Checkmate!" << std::endl;
+            } else {
+                // King is under check but not checkmate
+                return CheckStatus::Check;
+                std::cout << "King is in Check!" << std::endl;
+            }
+        }
+        else
+        return CheckStatus::None;
+    }  
 
     void printBoard() {
         static std::map<Piece, char> sprites =
