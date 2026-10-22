@@ -15,6 +15,12 @@ else()
     add_compile_options(-Wall -Wextra)
 endif()
 
+# Bundle the MinGW runtime into the .exe so it runs outside the MSYS2 shell
+# (e.g. double-clicked, or launched by ChessX / Cute Chess).
+if(MINGW)
+    add_link_options(-static)
+endif()
+
 # Core engine: board, move generation, evaluation, search.
 # No UI code lives here so it can later be built for a microcontroller.
 add_library(engine STATIC
