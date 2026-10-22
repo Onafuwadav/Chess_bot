@@ -37,7 +37,8 @@ Move minimax(ChessBoard& board, int depth, bool minimize) {
 }
 
 Move AIMove(ChessBoard& board) {
-    bool minimize = board.turn == ChessBoard::Turn::white ? true : false;
+    // score() is white minus black, so white maximises and black minimises
+    bool minimize = board.turn == ChessBoard::Turn::black;
     Move m = minimax(board, 4, minimize);
     board.makeMove(m.from, m.to, m.promotion);
     return m;

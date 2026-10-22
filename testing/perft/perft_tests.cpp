@@ -2,7 +2,7 @@
 // the published counts from https://www.chessprogramming.org/Perft_Results
 //
 // The deeper counts are tagged [.slow] and only run when asked for:
-//   perft_tests "[slow]"
+//   engine_tests "[slow]"
 
 #include <catch2/catch_test_macros.hpp>
 #include "board.h"

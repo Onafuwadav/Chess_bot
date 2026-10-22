@@ -41,8 +41,8 @@ add_executable(chess_cli play/cli/main.cpp)
 target_link_libraries(chess_cli PRIVATE engine)
 chess_warnings(chess_cli)
 
-# Perft tests (Catch2 is downloaded at configure time)
-option(CHESS_BUILD_TESTS "Build the perft tests" ON)
+# Tests: perft (move generation) and search (Catch2 is downloaded at configure time)
+option(CHESS_BUILD_TESTS "Build the engine tests" ON)
 if(CHESS_BUILD_TESTS)
     include(FetchContent)
     FetchContent_Declare(Catch2
@@ -53,10 +53,13 @@ if(CHESS_BUILD_TESTS)
     list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 
     enable_testing()
-    add_executable(perft_tests testing/perft/perft_tests.cpp)
-    target_link_libraries(perft_tests PRIVATE engine Catch2::Catch2WithMain)
-    chess_warnings(perft_tests)
+    add_executable(engine_tests
+        testing/perft/perft_tests.cpp
+        testing/search/search_tests.cpp
+    )
+    target_link_libraries(engine_tests PRIVATE engine Catch2::Catch2WithMain)
+    chess_warnings(engine_tests)
 
     include(Catch)
-    catch_discover_tests(perft_tests)
+    catch_discover_tests(engine_tests)
 endif()
