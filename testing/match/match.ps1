@@ -53,7 +53,8 @@ foreach ($level in $Elo) {
         -resign movecount=4 score=800 `
         -pgnout $pgn 2>&1 | ForEach-Object {
             $line = "$_"
-            Write-Host $line
+            # SPRT (early stopping for version-vs-version tests) isn't used, so its line is always empty
+            if ($line -notmatch "^SPRT:") { Write-Host $line }
             if ($line -match "^Score of") { $scoreLine = $line }
             if ($line -match "^Elo difference") { $eloLine = $line }
         }
