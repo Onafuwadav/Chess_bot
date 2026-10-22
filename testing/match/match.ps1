@@ -58,13 +58,28 @@ foreach ($level in $Elo) {
             if ($line -match "^Elo difference") { $eloLine = $line }
         }
 
-    # "Elo difference: -95.4 +/- 120.3, LOS: ..." -> estimated rating = level + difference
-    $estimate = "?"
-    if ($eloLine -match "Elo difference:\s*(-?[\d.]+|-?inf)\s*\+/-\s*([\d.]+|nan)") {
-        if ($Matches[1] -notmatch "inf") { $estimate = "{0:N0} +/- {1}" -f ($level + [double]$Matches[1]), $Matches[2] }
-        else { $estimate = "out of range (won or lost every game)" }
+    # "Score of A vs B: 16 - 23 - 1  [0.412] 40" -> wins, losses, draws, score fraction, games
+    $games = "?"; $wld = "?"; $score = "?"
+    if ($scoreLine -match ":\s*(\d+)\s*-\s*(\d+)\s*-\s*(\d+)\s*\[([\d.]+)\]\s*(\d+)") {
+        $wld = "$($Matches[1])-$($Matches[2])-$($Matches[3])"
+        $score = "{0:P0}" -f [double]$Matches[4]
+        $games = $Matches[5]
     }
-    $summary += [pscustomobject]@{ "Stockfish Elo" = $level; "Result (W-L-D)" = ($scoreLine -replace "^Score of .*?: ", ""); "$Name estimate" = $estimate }
+
+    # "Elo difference: -61.4 +/- 111.8, LOS: ..." -> estimated rating = level + difference
+    $diff = "?"; $estimate = "?"
+    if ($eloLine -match "Elo difference:\s*(-?[\d.]+|-?inf)\s*\+/-\s*([\d.]+|nan)") {
+        if ($Matches[1] -notmatch "inf") {
+            $diff = "{0:+0;-0} (+/- {1:0})" -f [double]$Matches[1], $(if ($Matches[2] -eq "nan") { [double]::NaN } else { [double]$Matches[2] })
+            $estimate = "{0:0}" -f ($level + [double]$Matches[1])
+        } else {
+            $diff = "n/a (won or lost all)"; $estimate = ""
+        }
+    }
+    $summary += [pscustomobject]@{
+        "Stockfish Elo" = $level; Games = $games; "W-L-D" = $wld; Score = $score
+        "Elo diff" = $diff; "$Name estimate" = $estimate
+    }
 }
 
 Write-Host "`n=== Summary ===" -ForegroundColor Cyan

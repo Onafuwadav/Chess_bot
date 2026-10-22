@@ -54,9 +54,12 @@ foreach ($g in $games) {
         if ($me -like "Stockfish*") { continue }
         if ($Engine -and $me -ne $Engine) { continue }
         $key = "$me|$($g.TimeControl)|$opponent"
-        if (-not $tally.ContainsKey($key)) { $tally[$key] = @{ W = 0; L = 0; D = 0 } }
+        if (-not $tally.ContainsKey($key)) { $tally[$key] = @{ W = 0; L = 0; D = 0; White = 0; WhitePts = 0.0; Black = 0; BlackPts = 0.0 } }
         $won = ($side -eq "White" -and $g.Result -eq "1-0") -or ($side -eq "Black" -and $g.Result -eq "0-1")
-        if ($g.Result -eq "1/2-1/2") { $tally[$key].D++ } elseif ($won) { $tally[$key].W++ } else { $tally[$key].L++ }
+        if ($g.Result -eq "1/2-1/2") { $tally[$key].D++; $points = 0.5 } elseif ($won) { $tally[$key].W++; $points = 1.0 } else { $tally[$key].L++; $points = 0.0 }
+        # Games and points per colour, for the "As White" / "As Black" scores
+        $tally[$key].$side++
+        $tally[$key]["${side}Pts"] += $points
     }
 }
 if ($tally.Count -eq 0) { Write-Host "No finished games match."; exit 0 }
@@ -96,9 +99,12 @@ foreach ($group in $groups) {
             $diffText = "{0:+0;-0} (+/- {1:0})" -f $diff, (($high - $low) / 2)
             if ($null -ne $rating) { $estimateText = "{0:0}" -f ($rating + $diff) }
         }
+        $asWhite = if ($t.White -gt 0) { "{0:P0}" -f ($t.WhitePts / $t.White) } else { "-" }
+        $asBlack = if ($t.Black -gt 0) { "{0:P0}" -f ($t.BlackPts / $t.Black) } else { "-" }
         $rows += [pscustomobject]@{
             Opponent = $entry.Opponent; Games = $n; W = $t.W; L = $t.L; D = $t.D
-            Score = "{0:P0}" -f $score; "Elo diff" = $diffText; Estimate = $estimateText
+            Score = "{0:P0}" -f $score; "As White" = $asWhite; "As Black" = $asBlack
+            "Elo diff" = $diffText; Estimate = $estimateText
         }
         if ($null -ne $rating) {
             for ($i = 0; $i -lt $t.W; $i++) { $ratedGames += , @($rating, 1.0) }
