@@ -71,8 +71,14 @@ Write-Host "Wrote $themes\chess-pack.png and $themes\boards\chess-pack.png"
 
 if ($Install) {
     $chessxThemes = Join-Path $env:LOCALAPPDATA "chessx\chessx\data\themes"
+    # ChessX looks in themes\outline\ or themes\shadow\ when that piece effect is chosen;
+    # the art already has outlines and shading, so the same sheet goes in all three
+    foreach ($effect in "", "outline", "shadow") {
+        $dir = Join-Path $chessxThemes $effect
+        New-Item -ItemType Directory -Force $dir | Out-Null
+        Copy-Item (Join-Path $themes "chess-pack.png") $dir -Force
+    }
     New-Item -ItemType Directory -Force (Join-Path $chessxThemes "boards") | Out-Null
-    Copy-Item (Join-Path $themes "chess-pack.png") $chessxThemes -Force
     Copy-Item (Join-Path $themes "boards\chess-pack.png") (Join-Path $chessxThemes "boards") -Force
     Write-Host "Installed into $chessxThemes (restart ChessX, then Edit > Preferences > Board)"
 }
