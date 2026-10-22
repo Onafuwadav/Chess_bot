@@ -228,7 +228,7 @@ const char* ChessBoard::drawReason() const {
 // Looks outward from the square for each kind of attacker, instead of
 // generating every enemy move: about 50 lookups at most.
 bool ChessBoard::isSquareAttacked(const Pos& square, Turn by) const {
-    const std::map<Pos, Piece>& attackers = by == Turn::white ? white_pieces : black_pieces;
+    const PieceMap& attackers = by == Turn::white ? white_pieces : black_pieces;
     auto attackerAt = [&](int dx, int dy, Piece piece) -> bool {
         auto it = attackers.find(Pos(square, dx, dy));
         return it != attackers.end() && it->second == piece;
@@ -269,7 +269,7 @@ bool ChessBoard::isSquareAttacked(const Pos& square, Turn by) const {
 }
 
 bool ChessBoard::isKingUnderAttack(Turn whichKing) const {
-    const std::map<Pos, Piece>& own = whichKing == Turn::white ? white_pieces : black_pieces;
+    const PieceMap& own = whichKing == Turn::white ? white_pieces : black_pieces;
     for (const auto& piece : own)
         if (piece.second == Piece::king)
             return isSquareAttacked(piece.first, whichKing == Turn::white ? Turn::black : Turn::white);

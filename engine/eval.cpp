@@ -2,9 +2,8 @@
 #include <cstdint>
 
 // Values in centipawns (1 pawn = 100). The king's value cancels out since both sides always have one.
-std::map<ChessBoard::Piece, int> ChessBoard::pieceValues{ {ChessBoard::Piece::king, 20000},
-{ChessBoard::Piece::queen, 900}, {ChessBoard::Piece::black_pawn, 100}, {ChessBoard::Piece::white_pawn, 100},
-{ChessBoard::Piece::bishop, 330},{ChessBoard::Piece::knight, 320},{ChessBoard::Piece::rook, 500}, };
+// In Piece order: king, queen, white_pawn, black_pawn, rook, bishop, knight
+const ChessBoard::PieceValues ChessBoard::pieceValues{ { 20000, 900, 100, 100, 500, 330, 320 } };
 
 namespace {
 

@@ -35,7 +35,7 @@ struct OrderedMove {
 // so pawn takes queen (8900) comes before queen takes pawn (100). Promotions add the new piece's value.
 std::vector<OrderedMove> orderedMoves(ChessBoard& board, bool capturesOnly = false, const Move* first = nullptr) {
     std::vector<OrderedMove> moves;
-    for (auto& from : board.moverPieces()) {
+    for (const auto& from : board.moverPieces()) {
         int attacker = ChessBoard::pieceValues[from.second];
         bool pawn = from.second == ChessBoard::Piece::white_pawn || from.second == ChessBoard::Piece::black_pawn;
         for (auto& to : possibleMoves(board, from.first, board.LastMoveTo, board.LastMoveFrom, board.LastMovePiece, capturesOnly)) {
