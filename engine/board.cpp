@@ -2,6 +2,7 @@
 #include "movegen.h"
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
 #include <vector>
 
 // Function to reset the chessboard to initial state
@@ -23,6 +24,8 @@ void ChessBoard::reset() {
     LastMoveTo = Pos();
     LastMoveFrom = Pos();
     LastMovePiece = Piece::king;
+    halfmoveClock = 0;
+    history.assign(1, positionKey());
 }
 
 Pos ChessBoard::fromAlgebraic(const std::string& square) {
@@ -96,6 +99,9 @@ bool ChessBoard::loadFEN(const std::string& fen) {
         LastMoveTo = Pos(ep.x, ep.y + dir);
         LastMovePiece = ep.y == 3 ? Piece::white_pawn : Piece::black_pawn;
     }
+
+    halfmoveClock = fields.size() > 4 ? std::atoi(fields[4].c_str()) : 0;
+    history.assign(1, positionKey());
     return true;
 }
 
@@ -113,6 +119,10 @@ bool ChessBoard::makeMove(Pos from, Pos to, Piece promotion) {
 }
 
 void ChessBoard::applyMove(Pos from, Pos to, Piece promotion) {
+    // Pawn moves and captures can't be undone, so they reset the 50-move count and the repetition history
+    bool irreversible = moverPieces()[from] == Piece::white_pawn || moverPieces()[from] == Piece::black_pawn
+        || opponentPieces().count(to);
+
     // check for en-passant: a pawn moving diagonally onto an empty square can only be en passant,
     // and the pawn it captures is beside it (same rank it started on, file it moved to)
     if ((moverPieces()[from] == Piece::white_pawn || moverPieces()[from] == Piece::black_pawn)
@@ -151,6 +161,68 @@ void ChessBoard::applyMove(Pos from, Pos to, Piece promotion) {
     if ((moverPieces()[to] == Piece::white_pawn || moverPieces()[to] == Piece::black_pawn) && (to.y == 1 || to.y == 8))
         moverPieces()[to] = promotion;
     flipTurn();
+
+    if (irreversible) {
+        halfmoveClock = 0;
+        history.clear();
+    } else {
+        ++halfmoveClock;
+    }
+    history.push_back(positionKey());
+}
+
+namespace {
+// Turns a number into a well-mixed 64-bit value (splitmix64). Used instead of a table
+// of random Zobrist keys, so no RAM is spent on a 6 KB table (matters on a microcontroller).
+uint64_t zobrist(uint64_t n) {
+    n += 0x9E3779B97F4A7C15ULL;
+    n = (n ^ (n >> 30)) * 0xBF58476D1CE4E5B9ULL;
+    n = (n ^ (n >> 27)) * 0x94D049BB133111EBULL;
+    return n ^ (n >> 31);
+}
+} // namespace
+
+// XOR of one key per (piece, colour, square), plus side to move, castling rights and
+// the en passant file
+uint64_t ChessBoard::positionKey() const {
+    uint64_t key = 0;
+    for (int white = 0; white < 2; ++white)
+        for (const auto& p : white ? white_pieces : black_pieces) {
+            int square = (p.first.x - 1) * 8 + (p.first.y - 1);
+            int piece = static_cast<int>(p.second) * 2 + white;
+            key ^= zobrist(piece * 64 + square);
+        }
+    if (turn == Turn::black)
+        key ^= zobrist(1000);
+    key ^= zobrist(1001 + castlingRights);
+    bool doublePush = (LastMovePiece == Piece::white_pawn || LastMovePiece == Piece::black_pawn)
+        && (LastMoveTo.y - LastMoveFrom.y == 2 || LastMoveTo.y - LastMoveFrom.y == -2);
+    if (doublePush)
+        key ^= zobrist(1100 + LastMoveTo.x);
+    return key;
+}
+
+const char* ChessBoard::drawReason() const {
+    if (halfmoveClock >= 100)
+        return "50-move rule";
+
+    // The current position is the last entry in history
+    if (!history.empty() && std::count(history.begin(), history.end(), history.back()) >= 3)
+        return "threefold repetition";
+
+    // Not enough to mate: kings only, or a single knight or bishop besides the kings
+    int others = 0;
+    bool minorOnly = true;
+    for (const auto* side : { &white_pieces, &black_pieces })
+        for (const auto& p : *side) {
+            if (p.second == Piece::king) continue;
+            ++others;
+            if (p.second != Piece::knight && p.second != Piece::bishop) minorOnly = false;
+        }
+    if (others == 0 || (others == 1 && minorOnly))
+        return "insufficient material";
+
+    return nullptr;
 }
 
 // Looks outward from the square for each kind of attacker, instead of
@@ -217,5 +289,7 @@ ChessBoard::CheckStatus ChessBoard::StatusCheck() {
     bool inCheck = isKingUnderAttack(turn);
     if (!hasLegalMove())
         return inCheck ? CheckStatus::Checkmate : CheckStatus::Stalemate;
+    if (drawReason())
+        return CheckStatus::Draw;
     return inCheck ? CheckStatus::Check : CheckStatus::None;
 }

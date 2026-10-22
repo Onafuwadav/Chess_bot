@@ -1,6 +1,8 @@
 #pragma once
+#include <cstdint>
 #include <map>
 #include <string>
+#include <vector>
 
 struct Pos {
     int x, y;
@@ -38,7 +40,7 @@ struct Pos {
 };
 
 struct ChessBoard {
-    enum class CheckStatus { None, Check, Checkmate, Stalemate };
+    enum class CheckStatus { None, Check, Checkmate, Stalemate, Draw };
     enum class Turn { white, black } turn;
     enum class Piece { king, queen, white_pawn, black_pawn, rook, bishop, knight }; // Defining chess piece types
     static std::map<Piece, int> pieceValues; // Map to hold values for each piece and their values (defined in eval.cpp)
@@ -51,6 +53,12 @@ struct ChessBoard {
     // Castling rights as bit flags (lost when the king or that rook moves, or the rook is captured)
     enum Castle { WhiteKingSide = 1, WhiteQueenSide = 2, BlackKingSide = 4, BlackQueenSide = 8 };
     int castlingRights = 0;
+
+    // Draw tracking: half-moves since the last capture or pawn move (50-move rule), and the
+    // position keys since then (repetition can't reach back past a capture or pawn move)
+    int halfmoveClock = 0;
+    std::vector<uint64_t> history;
+
     std::map<Pos, Piece>& moverPieces() { return turn == Turn::white ? white_pieces : black_pieces; } // Function to retrieve pieces of the current player
     std::map<Pos, Piece>& opponentPieces() { return turn == Turn::white ? black_pieces : white_pieces; } // Function to retrieve pieces of the opponent player
 
@@ -81,9 +89,17 @@ struct ChessBoard {
 
     // True if whichKing's king is in check
     bool isKingUnderAttack(Turn whichKing) const;
+
     // True if the side to move has at least one legal move
     bool hasLegalMove();
 
-    // Check, checkmate or stalemate for the side to move
+    // A 64-bit number for the position (Zobrist hash), equal for equal positions,
+    // so repetitions can be found by comparing numbers
+    uint64_t positionKey() const;
+
+    // Why the game is drawn by rule (50-move, threefold repetition, insufficient material), or nullptr
+    const char* drawReason() const;
+
+    // Check, checkmate, stalemate or draw for the side to move
     CheckStatus StatusCheck();
 };

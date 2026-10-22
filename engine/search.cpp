@@ -9,6 +9,11 @@ Move minimax(ChessBoard& board, int depth, bool minimize) {
         best_move.score = score(board);
         return best_move;
     }
+    // A drawn position is worth 0 to both sides, however much material is left
+    if (board.drawReason()) {
+        best_move.score = 0;
+        return best_move;
+    }
 
     for (auto& from : board.moverPieces()) {
         for (auto& to : possibleMoves(board, from.first, board.LastMoveTo, board.LastMoveFrom, board.LastMovePiece)) {

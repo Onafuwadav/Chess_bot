@@ -117,6 +117,9 @@ bool gameOver(ChessBoard& board, const char* winMessage) {
     case ChessBoard::CheckStatus::Stalemate:
         std::cout << "* Stalemate, it's a draw." << std::endl;
         return true;
+    case ChessBoard::CheckStatus::Draw:
+        std::cout << "* Draw by " << board.drawReason() << "." << std::endl;
+        return true;
     case ChessBoard::CheckStatus::Check:
         std::cout << "* Check!" << std::endl;
         return false;
