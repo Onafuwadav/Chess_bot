@@ -1,5 +1,9 @@
 #pragma once
 #include "board.h"
+#include <cstdint>
+
+// Number of positions the search has visited (reset it before a search to measure one)
+extern uint64_t searchNodes;
 
 struct Move {
     Pos from, to;

@@ -41,6 +41,11 @@ add_executable(chess_cli play/cli/main.cpp)
 target_link_libraries(chess_cli PRIVATE engine)
 chess_warnings(chess_cli)
 
+# Search benchmark: positions searched and time at a fixed depth
+add_executable(engine_bench testing/bench/bench.cpp)
+target_link_libraries(engine_bench PRIVATE engine)
+chess_warnings(engine_bench)
+
 # Tests: perft (move generation) and search (Catch2 is downloaded at configure time)
 option(CHESS_BUILD_TESTS "Build the engine tests" ON)
 if(CHESS_BUILD_TESTS)

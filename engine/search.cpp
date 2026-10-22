@@ -2,7 +2,10 @@
 #include "eval.h"
 #include "movegen.h"
 
+uint64_t searchNodes = 0;
+
 Move minimax(ChessBoard& board, int depth, bool minimize) {
+    ++searchNodes;
     Move best_move;
     best_move.score = -1000000 + 2000000 * minimize;
     if (0 == depth) {
