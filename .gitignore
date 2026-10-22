@@ -10,7 +10,8 @@ build/
 
 # Downloaded tools and assets (fetch them yourself, see README)
 *.zip
-stockfish/
+stockfish/*
+!stockfish/README.md
 
 # Match results from testing/match (keep the folder and its README, not the games)
 testing/match/results/*
