@@ -1,8 +1,8 @@
 # Chess_bot
 
-A chess engine written from scratch in C++17. It searches with minimax and alpha-beta pruning,
+A chess engine written from scratch in C++. It searches with minimax and alpha-beta pruning,
 orders moves so the pruning works well, and evaluates positions with material plus piece-square
-tables. It speaks UCI, so you can play it in a chess GUI such as ChessX or Cute Chess, and run
+tables. You can play it in a chess GUI such as ChessX or Cute Chess, and run
 matches against Stockfish to measure its strength.
 
 The long-term goal is a physical board: a camera reads the human's move and the engine replies.
@@ -69,7 +69,7 @@ scores higher.
 ### Evaluation (`engine/eval.*`)
 
 `score = sum over white pieces (value + table[square]) - same for black`, in centipawns:
-pawn 100, knight 320, bishop 330, rook 500, queen 900. The piece-square tables come from Tomasz
+pawn 100, knight 320, bishop 330, rook 500, queen 900. The piece-square tables used come from Tomasz
 Michniewski's *Simplified Evaluation Function*: knights prefer the centre, pawns gain value as
 they advance, rooks like the 7th rank. The king uses two tables blended by game phase:
 
@@ -124,12 +124,9 @@ move generator is correct. All of these match:
 | Position 5 | 4 | 2,103,487 |
 | Position 6 | 4 | 3,894,594 |
 
-Before the fixes in this repo's history, all six were wrong. Each fix commit (legal moves,
-castling, underpromotion, en passant) brought more of them into line.
-
 ### Speed
 
-`engine_bench 4` searches four positions (start, Kiwipete, a middlegame, a rook endgame) to
+`engine_bench 4` searches four positions (start, Kiwipete, a middle game, a rook endgame) to
 depth 4. How each change affected it:
 
 | Version | Positions searched | Time |
@@ -177,23 +174,13 @@ Needs [Cute Chess](https://github.com/cutechess/cutechess) (for cutechess-cli) a
 
 ## 2. Human vs AI
 
-### In a chess GUI (recommended)
+### In a chess GUI
+`chess_uci.exe` works in any UCI GUI.
 
-`chess_uci.exe` works in any UCI GUI. In **ChessX**: Edit > Preferences > Engines, add a UCI
-engine with command `...\build\chess_uci.exe`, then start a game against it.
-
-The repo includes a ChessX theme made from Joszs's hand-drawn
-[Chess Pieces and Board Pack](https://joszs.itch.io/chess-pack) (CC BY 4.0). To install it,
-unzip the pack into `chess-pack/` and run:
-
-```powershell
-.\play\gui-theme\make_chessx_theme.ps1 -Install
-```
-
-Restart ChessX and pick **chess-pack** for pieces and board in Edit > Preferences > Board.
+The repo includes a Chess board and picece theme made from Joszs's hand-drawn
+[Chess Pieces and Board Pack](https://joszs.itch.io/chess-pack) (CC BY 4.0).
 
 ### In the terminal
-
 `chess_cli.exe` draws the board in text and plays at 2 seconds per move. Moves are typed as four
 digits `xyxy` (from-square then to-square, in the board's own coordinates shown around the
 board), with an optional promotion letter, e.g. `2728n`. `h` shows help.
