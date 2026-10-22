@@ -12,8 +12,9 @@ build/
 *.zip
 stockfish/
 
-# Match results from testing/match
-testing/match/results/
+# Match results from testing/match (keep the folder and its README, not the games)
+testing/match/results/*
+!testing/match/results/README.md
 
 # Older builds
 builds/
