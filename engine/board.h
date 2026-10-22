@@ -38,7 +38,7 @@ struct Pos {
 };
 
 struct ChessBoard {
-    enum class CheckStatus { None, Check, Checkmate };
+    enum class CheckStatus { None, Check, Checkmate, Stalemate };
     enum class Turn { white, black } turn;
     enum class Piece { king, queen, white_pawn, black_pawn, rook, bishop, knight }; // Defining chess piece types
     static std::map<Piece, int> pieceValues; // Map to hold values for each piece and their values (defined in eval.cpp)
@@ -81,8 +81,9 @@ struct ChessBoard {
 
     // True if whichKing's king is in check
     bool isKingUnderAttack(Turn whichKing) const;
-    CheckStatus StatusCheck(ChessBoard& board);
+    // True if the side to move has at least one legal move
+    bool hasLegalMove();
 
-    // add check/checkmate function
-    bool hasKing();
+    // Check, checkmate or stalemate for the side to move
+    CheckStatus StatusCheck();
 };

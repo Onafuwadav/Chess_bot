@@ -48,6 +48,25 @@ TEST_CASE("Square names convert both ways", "[fen]") {
     CHECK(ChessBoard::toAlgebraic(ChessBoard::fromAlgebraic("c6")) == "c6");
 }
 
+TEST_CASE("StatusCheck finds check, checkmate and stalemate", "[status]") {
+    ChessBoard board;
+
+    REQUIRE(board.loadFEN(kStartPos));
+    CHECK(board.StatusCheck() == ChessBoard::CheckStatus::None);
+
+    // Bb5+ : black is in check but can block
+    REQUIRE(board.loadFEN("rnbqkbnr/ppp1pppp/8/1B1p4/4P3/8/PPPP1PPP/RNBQK1NR b KQkq - 1 2"));
+    CHECK(board.StatusCheck() == ChessBoard::CheckStatus::Check);
+
+    // Fool's mate
+    REQUIRE(board.loadFEN("rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3"));
+    CHECK(board.StatusCheck() == ChessBoard::CheckStatus::Checkmate);
+
+    // Black king on h8 has no moves and isn't in check
+    REQUIRE(board.loadFEN("7k/5Q2/6K1/8/8/8/8/8 b - - 0 1"));
+    CHECK(board.StatusCheck() == ChessBoard::CheckStatus::Stalemate);
+}
+
 TEST_CASE("Perft: start position", "[perft]") {
     checkPerft(kStartPos, { 20, 400, 8902, 197281 });
 }

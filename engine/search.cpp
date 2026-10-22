@@ -29,6 +29,10 @@ Move minimax(ChessBoard& board, int depth, bool minimize) {
             }
         }
     }
+    // No legal moves: checkmate keeps the worst score for the side to move,
+    // but stalemate is a draw
+    if (best_move.from.x == -1 && !board.isKingUnderAttack(board.turn))
+        best_move.score = 0;
     return best_move;
 }
 

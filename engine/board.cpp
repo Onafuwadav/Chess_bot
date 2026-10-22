@@ -2,7 +2,6 @@
 #include "movegen.h"
 #include <algorithm>
 #include <cctype>
-#include <iostream>
 #include <vector>
 
 // Function to reset the chessboard to initial state
@@ -205,46 +204,18 @@ bool ChessBoard::isKingUnderAttack(Turn whichKing) const {
     return false;
 }
 
-ChessBoard::CheckStatus ChessBoard::StatusCheck(ChessBoard& board) {
-    Piece kingPiece = Piece::king;
-    Pos kingPos;
-    for (const auto& piece : board.opponentPieces()) {
-        if (piece.second == kingPiece) {
-            kingPos = piece.first;
-            break;
-        }
-    }
-
-    // check for checkmate
-    if ( isKingUnderAttack(turn) ) {
-        bool canEscape = false; // Assuming the king can escape
-        // Check if the king can move to a safe position
-        for (const auto& move : possibleMoves(board, kingPos, board.LastMoveTo, board.LastMoveFrom, LastMovePiece)) {
-            (void)move;
-            if (!isKingUnderAttack(turn)) {
-                canEscape = true; // King can escape
-                break;
-            }
-        }
-
-        if (!canEscape) {
-            // King is under checkmate
-            std::cout << "Checkmate!" << std::endl;
-            return CheckStatus::Checkmate;
-        } else {
-            // King is under check but not checkmate
-            std::cout << "King is in Check!" << std::endl;
-            return CheckStatus::Check;
-        }
-    }
-    else
-    return CheckStatus::None;
-}
-
-// add check/checkmate function
-bool ChessBoard::hasKing() {
-    for (auto& p : moverPieces())
-        if (p.second == Piece::king)
+bool ChessBoard::hasLegalMove() {
+    for (const auto& piece : moverPieces())
+        if (!possibleMoves(*this, piece.first, LastMoveTo, LastMoveFrom, LastMovePiece).empty())
             return true;
     return false;
+}
+
+// Status of the side to move. possibleMoves only returns legal moves, so
+// "can escape check" is simply "has any legal move" (king move, block or capture).
+ChessBoard::CheckStatus ChessBoard::StatusCheck() {
+    bool inCheck = isKingUnderAttack(turn);
+    if (!hasLegalMove())
+        return inCheck ? CheckStatus::Checkmate : CheckStatus::Stalemate;
+    return inCheck ? CheckStatus::Check : CheckStatus::None;
 }

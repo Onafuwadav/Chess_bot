@@ -108,6 +108,23 @@ void playAIMove(ChessBoard& board) {
     printBoard(board);
 }
 
+// Prints check / game over for the side now to move. True if the game has ended.
+bool gameOver(ChessBoard& board, const char* winMessage) {
+    switch (board.StatusCheck()) {
+    case ChessBoard::CheckStatus::Checkmate:
+        std::cout << "* Checkmate! " << winMessage << std::endl;
+        return true;
+    case ChessBoard::CheckStatus::Stalemate:
+        std::cout << "* Stalemate, it's a draw." << std::endl;
+        return true;
+    case ChessBoard::CheckStatus::Check:
+        std::cout << "* Check!" << std::endl;
+        return false;
+    default:
+        return false;
+    }
+}
+
 int main() {
     ChessBoard game;
     std::cout << std::endl << "* Chesscomputer v.0.1" << std::endl;
@@ -131,15 +148,11 @@ int main() {
             printBoard(game);
 
         while ((gameon = promptInput(game))) {
-            if (!game.hasKing()) {
-                std::cout << "* You are victorious!" << std::endl;
+            if (gameOver(game, "You are victorious!"))
                 break;
-            }
             playAIMove(game);
-            if (!game.hasKing()) {
-                std::cout << "* You are defeated!" << std::endl;
+            if (gameOver(game, "You are defeated!"))
                 break;
-            }
         }
     }
     return 0;
