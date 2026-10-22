@@ -61,6 +61,7 @@ if(CHESS_BUILD_TESTS)
     add_executable(engine_tests
         testing/perft/perft_tests.cpp
         testing/search/search_tests.cpp
+        testing/search/eval_tests.cpp
         testing/rules/draw_tests.cpp
     )
     target_link_libraries(engine_tests PRIVATE engine Catch2::Catch2WithMain)
