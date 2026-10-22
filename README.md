@@ -220,7 +220,7 @@ rating.
 | 1600 | 50 | 24-24-2 | 50% | 56% | 44% | +0 ± 97 | 1600 |
 | 1700 | 50 | 25-24-1 | 51% | 54% | 48% | +7 ± 98 | 1707 |
 
-**Overall estimate: about 1681** (200 games).
+**Overall estimate: about 1681** (over 200 games).
 
 #### How the overall estimate is calculated
 The rows above disagree (1824, 1673, 1600, 1707) because each has its own error. The overall
