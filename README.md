@@ -189,15 +189,15 @@ All of these come from the standard Elo model: a player rated `D` points above t
 expected to score `E = 1 / (1 + 10^(-D / 400))`, so +200 Elo expects about 76%, and 0 expects 50%.
 
 - **Score:** points per game, where a win is 1, a draw is ½ and a loss is 0.
-  e.g. 29 wins, 10 losses and 1 draw is 29.5 / 40 = 74%.
+  e.g. 36 wins, 13 losses and 1 draw is 36.5 / 50 = 73%.
 - **Elo diff:** the formula above turned around to find `D` from the score:
-  `D = -400 x log10(1 / score - 1)`. A 74% score gives +179.
+  `D = -400 x log10(1 / score - 1)`. A 73% score gives +173.
 - **± range:** the 95% error margin. The results of the individual games (1, ½ or 0) vary around the
   average score; dividing that spread by √games gives the uncertainty in the score, and
   score ± 1.96 x uncertainty is converted to Elo with the same formula. More games give a smaller
   range. Lopsided results give a wide one, because near 0% or 100% a small change in score is a big
   change in Elo (and exactly 0% or 100% has no finite Elo at all).
-- **Estimate:** the opponent's rating + Elo diff, e.g. 1500 + 179 = 1679.
+- **Estimate:** the opponent's rating + Elo diff, e.g. 1500 + 173 = 1673.
 - **Overall estimate:** one rating that fits the results against every level at once. More reliable than any single row because every game counts towards it.
 
 #### Why 120+1, and how far to trust the result
@@ -212,33 +212,33 @@ picks worse ones at random, so it blunders differently from a human or a weak en
 this a useful, repeatable yardstick for comparing versions of Chess_bot, but an approximate absolute
 rating.
 
-#### Results: Chess_bot at 120+1 (120 games so far)
-| Stockfish UCI_Elo | Games | W-L-D | Score | Elo diff | Estimate |
-|---|---|---|---|---|---|
-| 1400 | 50 | 46-4-0 | 92% | +424 ± 316 | 1824 |
-| 1500 | 40 | 29-10-1 | 74% | +179 ± 130 | 1679 |
-| 1600 | 17 (running) | 6-11-0 | 35% | -105 ± 196 | 1495 |
-| 1700 | 13 (running) | 5-8-0 | 38% | -82 ± 226 | 1618 |
+#### Results: Chess_bot at 120+1 (200 games)
+| Stockfish UCI_Elo | Games | W-L-D | Score | As White | As Black | Elo diff | Estimate |
+|---|---|---|---|---|---|---|---|
+| 1400 | 50 | 46-4-0 | 92% | 96% | 88% | +424 ± 316 | 1824 |
+| 1500 | 50 | 36-13-1 | 73% | 77% | 69% | +173 ± 113 | 1673 |
+| 1600 | 50 | 24-24-2 | 50% | 56% | 44% | +0 ± 97 | 1600 |
+| 1700 | 50 | 25-24-1 | 51% | 54% | 48% | +7 ± 98 | 1707 |
 
-**Overall estimate: about ----** (200 games).
+**Overall estimate: about 1681** (200 games).
 
 #### How the overall estimate is calculated
-The rows above disagree (1824, 1679, 1495, 1618) because each has its own error. The overall
+The rows above disagree (1824, 1673, 1600, 1707) because each has its own error. The overall
 estimate finds the single rating `R` that would be expected to score exactly the points Chess_bot
 actually scored against all of them:
 
 `sum over every opponent of  games x 1 / (1 + 10^((opponent - R) / 400))  =  points scored`
 
 The script finds `R` by bisection (try a rating, check whether the expected points are too high or
-too low, halve the range, repeat). With the real results, `R = ----`:
+too low, halve the range, repeat). With the real results, `R = 1681`:
 
-| Opponent | Games | Expected score at 1670 | Expected points | Actual points |
+| Opponent | Games | Expected score at 1681 | Expected points | Actual points |
 |---|---|---|---|---|
-| 1400 | 50 | 1 / (1 + 10^(-270/400)) = 0.826 | 41.3 | 46 |
-| 1500 | 40 | 1 / (1 + 10^(-170/400)) = 0.727 | 29.1 | 29.5 |
-| 1600 | 17 | 1 / (1 + 10^(-70/400)) = 0.599 | 10.2 | 6 |
-| 1700 | 13 | 1 / (1 + 10^(30/400)) = 0.457 | 5.9 | 5 |
-| **Total** | **120** | | **86.5** | **86.5** |
+| 1400 | 50 | 1 / (1 + 10^(-281/400)) = 0.834 | 41.7 | 46 |
+| 1500 | 50 | 1 / (1 + 10^(-181/400)) = 0.739 | 37.0 | 36.5 |
+| 1600 | 50 | 1 / (1 + 10^(-81/400)) = 0.615 | 30.7 | 25 |
+| 1700 | 50 | 1 / (1 + 10^(19/400)) = 0.473 | 23.6 | 25.5 |
+| **Total** | **200** | | **133.0** | **133** |
 
 
 Needs [Cute Chess](https://github.com/cutechess/cutechess) (for cutechess-cli) and a
