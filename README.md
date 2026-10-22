@@ -257,21 +257,24 @@ digits `xyxy` (from-square then to-square, in the board's own coordinates shown 
 board), with an optional promotion letter, e.g. `2728n`. `h` shows help.
 
 ## 3. Future work: the physical board
-The engine core (`engine/`) was written with a microcontroller in mind: no `iostream`, fixed-size
-boards and tables, no memory allocation when a board is copied. Not yet done:
+Planned: play on a real board, with a camera reading your moves and Chess_bot replying on a small display.
 
-- **Microcontroller build.** A board copy is about 1 KB (most of it the repetition history), so a
-  search about 15 moves deep needs roughly 15-20 KB. That fits an ESP32 or RP2040 (260-520 KB RAM)
-  but not an Arduino Uno (2 KB). Still to do: replace the `std::vector` move lists with fixed
-  arrays, then write a small sketch that reads a move over serial and replies with the engine's.
-- **Computer vision.** A camera above the board, most likely processed on a Raspberry Pi or laptop
-  rather than the microcontroller, finds which squares changed after the human's move and sends
-  that move to the engine.
-- **Showing the engine's move.** Either a speaker announcing it ("knight to f3"), LEDs under the
-  squares, or eventually a robot arm that moves the piece itself.
+```
+ESP32-CAM ──Wi-Fi photo──> PC ──USB serial──> display board (LCD, keypad, servo)
+  above the board           vision + chess_uci.exe        "MOVE e7e5" / "MOVED", "NEW"
+```
 
-Engine ideas: a transposition table (cache of searched positions keyed by the Zobrist hash),
-killer moves, and an opening book.
+- **Camera (ESP32-CAM):** fixed above the board; takes a photo when asked and sends it to the PC.
+- **PC (Python, OpenCV + python-chess):** straightens the photo, splits it into 64 squares and
+  compares before/after to see which squares changed. It doesn't need to recognise pieces: the
+  changed squares plus the list of legal moves give the move. Chess_bot (`chess_uci.exe`) then
+  picks the reply.
+- **Display board (Arduino Nano or ESP32, over USB):** a 16x2 LCD shows the engine's move and
+  status; a keypad will give `#` "I've moved", `*` new game, `0` retake photo and `1`-`4` the
+  promotion piece; a servo flag shows whose turn it is.
+
+Later steps: run Chess_bot on the ESP32 itself so the PC only does vision (the engine core was
+written for this: no `iostream`, fixed-size boards and tables) and eventually a gantry to move the pieces.
 
 ## Project layout
 ```
