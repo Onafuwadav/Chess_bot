@@ -3,6 +3,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include "board.h"
 #include "search.h"
+#include <chrono>
 #include <string>
 
 namespace {
@@ -11,7 +12,7 @@ namespace {
 std::string engineMove(const char* fen) {
     ChessBoard board;
     REQUIRE(board.loadFEN(fen));
-    Move m = AIMove(board);
+    Move m = searchBestMove(board, 4, 0);
     return ChessBoard::toAlgebraic(m.from) + ChessBoard::toAlgebraic(m.to);
 }
 
@@ -23,6 +24,34 @@ TEST_CASE("Engine takes a free queen as white", "[search]") {
 
 TEST_CASE("Engine takes a free queen as black", "[search]") {
     CHECK(engineMove("4k3/8/8/3p4/4Q3/8/8/4K3 b - - 0 1") == "d5e4");
+}
+
+TEST_CASE("Engine finds mate in one and scores it as mate", "[search]") {
+    // Back-rank mate: Ra8#
+    ChessBoard board;
+    REQUIRE(board.loadFEN("6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1"));
+    Move m = searchBestMove(board, 4, 0);
+    CHECK(ChessBoard::toAlgebraic(m.from) + ChessBoard::toAlgebraic(m.to) == "a1a8");
+    CHECK(m.score == MATE_SCORE - 1);
+}
+
+TEST_CASE("Engine prefers the quickest mate", "[search]") {
+    // Qb7# mates at once; other queen moves mate later
+    ChessBoard board;
+    REQUIRE(board.loadFEN("k7/8/1K6/8/8/8/8/7Q w - - 0 1"));
+    Move m = searchBestMove(board, 4, 0);
+    board.makeMove(m.from, m.to, m.promotion);
+    CHECK(board.StatusCheck() == ChessBoard::CheckStatus::Checkmate);
+}
+
+TEST_CASE("Search stops at the time limit", "[search]") {
+    ChessBoard board;
+    REQUIRE(board.loadFEN("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"));
+    auto start = std::chrono::steady_clock::now();
+    Move m = searchBestMove(board, 64, 300);
+    double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+    CHECK(m.from.x != -1);
+    CHECK(ms < 600);
 }
 
 TEST_CASE("Search sees the recapture after its last move", "[search]") {
