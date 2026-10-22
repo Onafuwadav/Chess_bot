@@ -19,7 +19,7 @@ char promotionLetter(Piece piece) {
 }
 
 // Function to generate possible moves for a given piece
-std::vector<Pos> possibleMoves(ChessBoard& board, const Pos& from, const Pos& LastTo, const Pos& Lastfrom, Piece lastpiece) {
+std::vector<Pos> possibleMoves(ChessBoard& board, const Pos& from, const Pos& LastTo, const Pos& Lastfrom, Piece lastpiece, bool capturesOnly) {
     std::vector<Pos> moves; // Initialize vector to store possible moves
 
     // Lambdas to check ownership, opponent presence, board bounds, and free squares
@@ -126,6 +126,16 @@ std::vector<Pos> possibleMoves(ChessBoard& board, const Pos& from, const Pos& La
         for (int n = 1; n < 9 && addMove(-n, n) && !isOpponent(-n, n); ++n);
         for (int n = 1; n < 9 && addMove(-n, -n) && !isOpponent(-n, -n); ++n);
         break;
+    }
+
+    // Quiescence search only wants captures and promotions; drop the rest before the costly check below
+    if (capturesOnly) {
+        bool pawn = moving_piece == Piece::white_pawn || moving_piece == Piece::black_pawn;
+        moves.erase(std::remove_if(moves.begin(), moves.end(), [&](const Pos& to) {
+            bool capture = board.opponentPieces().count(to) || (pawn && to.x != from.x);
+            bool promotion = pawn && (to.y == 1 || to.y == 8);
+            return !capture && !promotion;
+        }), moves.end());
     }
 
     // Remove moves that leave our own king in check: play each on a copy and look

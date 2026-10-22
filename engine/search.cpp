@@ -16,12 +16,12 @@ struct OrderedMove {
 // All legal moves, best-looking first, so alpha-beta finds good moves early and cuts more.
 // Captures use MVV-LVA (most valuable victim, least valuable attacker): 10 * victim - attacker,
 // so pawn takes queen (8900) comes before queen takes pawn (100). Promotions add the new piece's value.
-std::vector<OrderedMove> orderedMoves(ChessBoard& board) {
+std::vector<OrderedMove> orderedMoves(ChessBoard& board, bool capturesOnly = false) {
     std::vector<OrderedMove> moves;
     for (auto& from : board.moverPieces()) {
         int attacker = ChessBoard::pieceValues[from.second];
         bool pawn = from.second == ChessBoard::Piece::white_pawn || from.second == ChessBoard::Piece::black_pawn;
-        for (auto& to : possibleMoves(board, from.first, board.LastMoveTo, board.LastMoveFrom, board.LastMovePiece)) {
+        for (auto& to : possibleMoves(board, from.first, board.LastMoveTo, board.LastMoveFrom, board.LastMovePiece, capturesOnly)) {
             int order = 0;
             auto victim = board.opponentPieces().find(to);
             if (victim != board.opponentPieces().end())
@@ -43,19 +43,52 @@ std::vector<OrderedMove> orderedMoves(ChessBoard& board) {
     return moves;
 }
 
+// Quiescence search: at the end of the main search, keep playing captures (and promotions)
+// until the position is quiet, so a capture on the last move isn't scored before the
+// recapture (the "horizon effect").
+// Stand pat: the side to move doesn't have to capture, so the static score is a floor
+// for it, and if that already beats the window the opponent won't allow this position.
+int quiesce(ChessBoard& board, int alpha, int beta, bool minimize) {
+    ++searchNodes;
+    int best = score(board);
+    if (!minimize) {
+        if (best >= beta) return best;
+        alpha = std::max(alpha, best);
+    } else {
+        if (best <= alpha) return best;
+        beta = std::min(beta, best);
+    }
+
+    for (const OrderedMove& move : orderedMoves(board, true)) {
+        ChessBoard branch = board;
+        branch.applyMove(move.from, move.to, move.promotion);
+        int s = quiesce(branch, alpha, beta, !minimize);
+        if (!minimize) {
+            best = std::max(best, s);
+            alpha = std::max(alpha, s);
+        } else {
+            best = std::min(best, s);
+            beta = std::min(beta, s);
+        }
+        if (alpha >= beta)
+            break;
+    }
+    return best;
+}
+
 } // namespace
 
 // Alpha-beta: alpha is the score white (the maximiser) is already sure of, beta the score
 // black (the minimiser) is already sure of. Once alpha >= beta the side choosing at the
 // parent would never let the game reach this position, so the remaining moves are skipped.
 Move minimax(ChessBoard& board, int depth, int alpha, int beta, bool minimize) {
-    ++searchNodes;
     Move best_move;
     best_move.score = -1000000 + 2000000 * minimize;
     if (0 == depth) {
-        best_move.score = score(board);
+        best_move.score = quiesce(board, alpha, beta, minimize);
         return best_move;
     }
+    ++searchNodes;
     // A drawn position is worth 0 to both sides, however much material is left
     if (board.drawReason()) {
         best_move.score = 0;

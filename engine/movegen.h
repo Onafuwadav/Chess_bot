@@ -2,8 +2,9 @@
 #include "board.h"
 #include <vector>
 
-// Function to generate possible moves for a given piece
-std::vector<Pos> possibleMoves(ChessBoard& board, const Pos& from, const Pos& LastTo, const Pos& Lastfrom, ChessBoard::Piece lastpiece);
+// Function to generate possible moves for a given piece (only captures and promotions if capturesOnly)
+std::vector<Pos> possibleMoves(ChessBoard& board, const Pos& from, const Pos& LastTo, const Pos& Lastfrom, ChessBoard::Piece lastpiece,
+    bool capturesOnly = false);
 
 // The pieces a pawn can promote to, most useful first
 constexpr ChessBoard::Piece promotionPieces[4] = {
