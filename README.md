@@ -153,31 +153,81 @@ colours swapped, and estimates a rating from the score:
 `Elo difference = -400 x log10(1 / score - 1)`.
 
 ```powershell
-.\testing\match\match.ps1 -Elo ...,... -Games ... -TimeControl "..."
+# play 50 games against each level (-Name labels this engine version in the results)
+.\testing\match\match.ps1 -Name Chess_bot -Elo 1400,1500,1600,1700 -Games 50 -TimeControl "120+1"
+
+# W-L-D and rating estimates from every saved game
+.\testing\match\summary.ps1 -TimeControl "120+1"
 ```
-Testing against 1320, 1500, 1700:
-First results, 10 games per level at 5s + 0.05s per game:
 
-| Stockfish UCI_Elo | Chess_bot W-L-D |
-|---|---|
-| 1320 | 9-1-0 |
-| 1500 | 3-7-0 |
-| 1700 | 3-7-0 |
-| 1900 | 0-10-0 |
+If PowerShell says running scripts is disabled, run
+`Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` in that window first.
 
-That suggests roughly **1400-1600** ELO at this fast time control. Ten games per level gives error
-bars of a few hundred Elo, and Stockfish's rating scale is calibrated at a different time control,
-so treat this as a rough first estimate.
+#### How the numbers are calculated
 
-Testing against 1400, 1500, 1600, 1700:
-Proper test results, 50 games per level at 120s + 1s per game:
-| Stockfish UCI_Elo | Chess_bot W-L-D |
-|---|---|
-| 1320 | x-x-x |
-| 1500 | x-x-x |
-| 1700 | x-x-x |
+All of these come from the standard Elo model: a player rated `D` points above their opponent is
+expected to score `E = 1 / (1 + 10^(-D / 400))`, so +200 Elo expects about 76%, and 0 expects 50%.
 
-That suggests roughly **xxxx-xxxx** ELO at this time control. Fifty games per level(took around 3hrs) gives a pretty accurate Elo rating, and this is the time control at which Stockfish's rating scale is calibrated at making it a more accurate estimate.
+- **Score:** points per game, where a win is 1, a draw is ½ and a loss is 0.
+  29 wins, 10 losses and 1 draw is 29.5 / 40 = 74%.
+- **Elo diff:** the formula above turned around to find `D` from the score:
+  `D = -400 x log10(1 / score - 1)`. A 74% score gives +179.
+- **± range:** the 95% error margin. The results of the individual games (1, ½ or 0) vary around the
+  average score; dividing that spread by √games gives the uncertainty in the score, and
+  score ± 1.96 x uncertainty is converted to Elo with the same formula. More games give a smaller
+  range. Lopsided results give a wide one, because near 0% or 100% a small change in score is a big
+  change in Elo (and exactly 0% or 100% has no finite Elo at all).
+- **Estimate:** the opponent's rating + Elo diff, e.g. 1500 + 179 = 1679.
+- **Overall estimate:** one rating that fits the results against every level at once (worked
+  through with real numbers below). It is more reliable than any single row because every game
+  counts towards it.
+
+#### Why 120+1, and how far to trust the result
+
+Stockfish's documentation says its `UCI_Elo` setting "has been calibrated at a time control of
+120s+1s and anchored to CCRL 40/4", so 120 s per side plus 1 s per move is where its labels are most
+accurate. At faster speeds Chess_bot searches less deeply while Stockfish stays comparatively strong,
+which makes Chess_bot look weaker than it is.
+
+Elo is relative: it only says how a player scores against the pool it was measured in. This one is
+measured on the CCRL computer rating list's scale, so it is not a FIDE or chess.com rating. A
+weakened Stockfish is also not a real 1500 player: it plays strong moves and then deliberately
+picks worse ones at random, so it blunders differently from a human or a weak engine. That makes
+this a useful, repeatable yardstick for comparing versions of Chess_bot, but an approximate absolute
+rating.
+
+#### Results: Chess_bot at 120+1 (120 games so far)
+
+| Stockfish UCI_Elo | Games | W-L-D | Score | Elo diff | Estimate |
+|---|---|---|---|---|---|
+| 1400 | 50 | 46-4-0 | 92% | +424 ± 316 | 1824 |
+| 1500 | 40 | 29-10-1 | 74% | +179 ± 130 | 1679 |
+| 1600 | 17 (running) | 6-11-0 | 35% | -105 ± 196 | 1495 |
+| 1700 | 13 (running) | 5-8-0 | 38% | -82 ± 226 | 1618 |
+
+**Overall estimate: about 1670** (120 games; the 1600 and 1700 matches are still being played).
+
+#### How the overall estimate is calculated
+
+The rows above disagree (1824, 1679, 1495, 1618) because each has its own error. The overall
+estimate finds the single rating `R` that would be expected to score exactly the points Chess_bot
+actually scored against all of them:
+
+`sum over every opponent of  games x 1 / (1 + 10^((opponent - R) / 400))  =  points scored`
+
+The script finds `R` by bisection (try a rating, check whether the expected points are too high or
+too low, halve the range, repeat). With the real results, `R = 1670`:
+
+| Opponent | Games | Expected score at 1670 | Expected points | Actual points |
+|---|---|---|---|---|
+| 1400 | 50 | 1 / (1 + 10^(-270/400)) = 0.826 | 41.3 | 46 |
+| 1500 | 40 | 1 / (1 + 10^(-170/400)) = 0.727 | 29.1 | 29.5 |
+| 1600 | 17 | 1 / (1 + 10^(-70/400)) = 0.599 | 10.2 | 6 |
+| 1700 | 13 | 1 / (1 + 10^(30/400)) = 0.457 | 5.9 | 5 |
+| **Total** | **120** | | **86.5** | **86.5** |
+
+At 1670 the expected and actual totals match. Chess_bot did better than expected against 1400 and
+worse against 1600, and those differences cancel out.
 
 Needs [Cute Chess](https://github.com/cutechess/cutechess) (for cutechess-cli) and a
 [Stockfish](https://stockfishchess.org/download/) `.exe` unzipped into `stockfish/` (not committed).
