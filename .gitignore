@@ -11,7 +11,12 @@ build/
 # Downloaded tools and assets (fetch them yourself, see README)
 *.zip
 stockfish/
-chess-pack/
 
 # Match results from testing/match
 testing/match/results/
+
+# Older builds
+builds/
+
+# Release zip made by scripts/package.ps1
+dist/

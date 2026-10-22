@@ -4,10 +4,11 @@
   into a ChessX piece set and board texture.
 
 .EXAMPLE
-  .\play\gui-theme\make_chessx_theme.ps1            # rebuild play\gui-theme\themes\ from .\chess-pack\
+  .\play\gui-theme\make_chessx_theme.ps1            # rebuild themes\ from the images in chess-pack\
   .\play\gui-theme\make_chessx_theme.ps1 -Install   # ...and copy it into ChessX's data folder
 
-  The pack is unzipped into .\chess-pack\ (not committed). ChessX wants:
+  Only needed to change the theme: to just install it, run install_chessx_theme.bat.
+  The original images are in play\gui-theme\chess-pack\. ChessX wants:
   - pieces: one PNG in a 6 x 2 grid, white on top, black below, each row
     rook, knight, bishop, queen, king, pawn  ->  themes\chess-pack.png
   - board:  one light square above one dark square        ->  themes\boards\chess-pack.png
@@ -20,10 +21,9 @@ param(
 )
 
 Add-Type -AssemblyName System.Drawing
-$root = (Resolve-Path "$PSScriptRoot\..\..").Path
-if (-not $PackDir) { $PackDir = Join-Path $root "chess-pack" }
+if (-not $PackDir) { $PackDir = Join-Path $PSScriptRoot "chess-pack" }
 if (-not (Test-Path (Join-Path $PackDir "board.png"))) {
-    Write-Error "Unzip chess-pack.zip into '$PackDir' first"; exit 1
+    Write-Error "The original chess pack images are missing from '$PackDir'"; exit 1
 }
 $themes = Join-Path $PSScriptRoot "themes"
 New-Item -ItemType Directory -Force (Join-Path $themes "boards") | Out-Null
@@ -70,15 +70,5 @@ $texture.Dispose()
 Write-Host "Wrote $themes\chess-pack.png and $themes\boards\chess-pack.png"
 
 if ($Install) {
-    $chessxThemes = Join-Path $env:LOCALAPPDATA "chessx\chessx\data\themes"
-    # ChessX looks in themes\outline\ or themes\shadow\ when that piece effect is chosen;
-    # the art already has outlines and shading, so the same sheet goes in all three
-    foreach ($effect in "", "outline", "shadow") {
-        $dir = Join-Path $chessxThemes $effect
-        New-Item -ItemType Directory -Force $dir | Out-Null
-        Copy-Item (Join-Path $themes "chess-pack.png") $dir -Force
-    }
-    New-Item -ItemType Directory -Force (Join-Path $chessxThemes "boards") | Out-Null
-    Copy-Item (Join-Path $themes "boards\chess-pack.png") (Join-Path $chessxThemes "boards") -Force
-    Write-Host "Installed into $chessxThemes (restart ChessX, then Edit > Preferences > Board)"
+    & (Join-Path $PSScriptRoot "install_chessx_theme.ps1")
 }
