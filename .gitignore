@@ -1,0 +1,17 @@
+# Build output
+build/
+*.exe
+*.o
+*.obj
+
+# Editor / IDE settings
+.vscode/
+.vs/
+
+# Downloaded tools and assets (fetch them yourself, see README)
+*.zip
+stockfish/
+chess-pack/
+
+# Match results from testing/match
+testing/match/results/
