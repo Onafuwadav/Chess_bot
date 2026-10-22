@@ -69,7 +69,7 @@ std::vector<Pos> possibleMoves(ChessBoard& board, const Pos& from, const Pos& La
         if (isOpponent(1, 1)) addMove(1, 1);
 
         // En-passant for white
-        if (LastTo.y == 7 && Lastfrom.y == 5 && from.y == 5 && lastpiece == Piece::black_pawn) {
+        if (LastTo.y == 5 && Lastfrom.y == 7 && from.y == 5 && lastpiece == Piece::black_pawn) {
             if (LastTo.x == from.x - 1 || LastTo.x == from.x + 1) {
                 moves.push_back(Pos(LastTo.x, 6));
             }

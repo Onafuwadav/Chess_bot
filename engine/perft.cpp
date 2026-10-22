@@ -7,7 +7,7 @@ uint64_t perft(ChessBoard& board, int depth) {
 
     uint64_t nodes = 0;
     for (auto& from : board.moverPieces()) {
-        std::vector<Pos> moves = possibleMoves(board, from.first, board.LastMoveTo, board.LastMoveFrom, board.LastMove[board.LastMoveTo]);
+        std::vector<Pos> moves = possibleMoves(board, from.first, board.LastMoveTo, board.LastMoveFrom, board.LastMovePiece);
         for (auto& to : moves) {
             bool promotion = isPromotion(board, from.first, to);
             // At the last ply each move is one position, so count them without playing them
@@ -30,7 +30,7 @@ uint64_t perft(ChessBoard& board, int depth) {
 std::vector<std::pair<std::string, uint64_t>> perftDivide(ChessBoard& board, int depth) {
     std::vector<std::pair<std::string, uint64_t>> result;
     for (auto& from : board.moverPieces()) {
-        for (auto& to : possibleMoves(board, from.first, board.LastMoveTo, board.LastMoveFrom, board.LastMove[board.LastMoveTo])) {
+        for (auto& to : possibleMoves(board, from.first, board.LastMoveTo, board.LastMoveFrom, board.LastMovePiece)) {
             bool promotion = isPromotion(board, from.first, to);
             for (ChessBoard::Piece piece : promotionPieces) {
                 ChessBoard branch = board;

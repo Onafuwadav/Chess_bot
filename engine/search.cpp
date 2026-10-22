@@ -11,7 +11,7 @@ Move minimax(ChessBoard& board, int depth, bool minimize) {
     }
 
     for (auto& from : board.moverPieces()) {
-        for (auto& to : possibleMoves(board, from.first, board.LastMoveTo, board.LastMoveFrom, board.LastMove[board.LastMoveTo])) {
+        for (auto& to : possibleMoves(board, from.first, board.LastMoveTo, board.LastMoveFrom, board.LastMovePiece)) {
             // A pawn reaching the last rank is four moves, one per promotion piece
             bool promotion = isPromotion(board, from.first, to);
             for (ChessBoard::Piece piece : promotionPieces) {

@@ -1,10 +1,6 @@
 // Perft tests: count every position reachable to a given depth and compare with
 // the published counts from https://www.chessprogramming.org/Perft_Results
 //
-// Tests tagged [!shouldfail] are known to be wrong right now. Catch2 reports
-// them as passing while they fail, and as failing once they pass, so each fix
-// has to remove its tag.
-//
 // The deeper counts are tagged [.slow] and only run when asked for:
 //   perft_tests "[slow]"
 
@@ -56,15 +52,15 @@ TEST_CASE("Perft: start position", "[perft]") {
     checkPerft(kStartPos, { 20, 400, 8902, 197281 });
 }
 
-TEST_CASE("Perft: Kiwipete", "[perft][!shouldfail]") {
+TEST_CASE("Perft: Kiwipete", "[perft]") {
     checkPerft(kKiwipete, { 48, 2039, 97862 });
 }
 
-TEST_CASE("Perft: position 3", "[perft][!shouldfail]") {
+TEST_CASE("Perft: position 3", "[perft]") {
     checkPerft(kPosition3, { 14, 191, 2812, 43238 });
 }
 
-TEST_CASE("Perft: position 4", "[perft][!shouldfail]") {
+TEST_CASE("Perft: position 4", "[perft]") {
     checkPerft(kPosition4, { 6, 264, 9467 });
 }
 
@@ -76,19 +72,19 @@ TEST_CASE("Perft: position 6", "[perft]") {
     checkPerft(kPosition6, { 46, 2079, 89890 });
 }
 
-TEST_CASE("Perft deep: start position", "[perft][.slow][!shouldfail]") {
+TEST_CASE("Perft deep: start position", "[perft][.slow]") {
     checkPerft(kStartPos, { 4865609 }, 5);
 }
 
-TEST_CASE("Perft deep: Kiwipete", "[perft][.slow][!shouldfail]") {
+TEST_CASE("Perft deep: Kiwipete", "[perft][.slow]") {
     checkPerft(kKiwipete, { 4085603 }, 4);
 }
 
-TEST_CASE("Perft deep: position 3", "[perft][.slow][!shouldfail]") {
+TEST_CASE("Perft deep: position 3", "[perft][.slow]") {
     checkPerft(kPosition3, { 674624 }, 5);
 }
 
-TEST_CASE("Perft deep: position 4", "[perft][.slow][!shouldfail]") {
+TEST_CASE("Perft deep: position 4", "[perft][.slow]") {
     checkPerft(kPosition4, { 422333 }, 4);
 }
 

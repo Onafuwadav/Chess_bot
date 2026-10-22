@@ -45,7 +45,7 @@ struct ChessBoard {
 
     Pos LastMoveTo;
     Pos LastMoveFrom;
-    std::map<Pos, Piece> LastMove; // Saving last move made
+    Piece LastMovePiece = Piece::king; // Piece that made the last move (en passant needs to know it was a pawn)
     std::map<Pos, Piece> white_pieces, black_pieces; // Maps to store positions of pieces for each player
 
     // Castling rights as bit flags (lost when the king or that rook moves, or the rook is captured)

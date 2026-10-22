@@ -21,6 +21,9 @@ void ChessBoard::reset() {
     }
     black_pieces[Pos(5, 8)] = white_pieces[Pos(5, 1)] = Piece::queen;
     castlingRights = WhiteKingSide | WhiteQueenSide | BlackKingSide | BlackQueenSide;
+    LastMoveTo = Pos();
+    LastMoveFrom = Pos();
+    LastMovePiece = Piece::king;
 }
 
 Pos ChessBoard::fromAlgebraic(const std::string& square) {
@@ -46,9 +49,9 @@ bool ChessBoard::loadFEN(const std::string& fen) {
 
     white_pieces.clear();
     black_pieces.clear();
-    LastMove.clear();
     LastMoveTo = Pos();
     LastMoveFrom = Pos();
+    LastMovePiece = Piece::king;
 
     // Placement goes rank 8 to rank 1, each rank from the a-file to the h-file
     int y = 8, file = 0;
@@ -92,7 +95,7 @@ bool ChessBoard::loadFEN(const std::string& fen) {
         int dir = ep.y == 3 ? 1 : -1; // rank 3: white pawn went up, rank 6: black pawn went down
         LastMoveFrom = Pos(ep.x, ep.y - dir);
         LastMoveTo = Pos(ep.x, ep.y + dir);
-        LastMove = opponentPieces();
+        LastMovePiece = ep.y == 3 ? Piece::white_pawn : Piece::black_pawn;
     }
     return true;
 }
@@ -100,7 +103,7 @@ bool ChessBoard::loadFEN(const std::string& fen) {
 // Function to execute move on board(checking first if move is possible and legal) then switching turn
 //######(change to add piece square tables and such)#######
 bool ChessBoard::makeMove(Pos from, Pos to, Piece promotion) {
-    std::vector<Pos> allowed = possibleMoves(*this, from, LastMoveTo, LastMoveFrom, LastMove[LastMoveTo]);
+    std::vector<Pos> allowed = possibleMoves(*this, from, LastMoveTo, LastMoveFrom, LastMovePiece);
     if (find(allowed.begin(), allowed.end(), to) == allowed.end())
         return false;
     if (promotion != Piece::queen && promotion != Piece::rook && promotion != Piece::bishop && promotion != Piece::knight)
@@ -111,14 +114,11 @@ bool ChessBoard::makeMove(Pos from, Pos to, Piece promotion) {
 }
 
 void ChessBoard::applyMove(Pos from, Pos to, Piece promotion) {
-    // check for en-passant
-     if((LastMove[LastMoveTo] == Piece::white_pawn || LastMove[LastMoveTo] == Piece::black_pawn) && (moverPieces()[from] == Piece::white_pawn || moverPieces()[from] == Piece::black_pawn)
-      && (!(white_pieces.count(to) || black_pieces.count(to))) && (LastMoveTo.x == from.x - 1 || LastMoveTo.x == from.x + 1) && (LastMoveTo.y == to.y)){
-        if(turn == Turn::white)
-            opponentPieces().erase(Pos(to.x, to.y-1));
-        else
-            opponentPieces().erase(Pos(to.x, to.y+1));
-     }
+    // check for en-passant: a pawn moving diagonally onto an empty square can only be en passant,
+    // and the pawn it captures is beside it (same rank it started on, file it moved to)
+    if ((moverPieces()[from] == Piece::white_pawn || moverPieces()[from] == Piece::black_pawn)
+        && to.x != from.x && !(white_pieces.count(to) || black_pieces.count(to)))
+        opponentPieces().erase(Pos(to.x, from.y));
 
     // Castling: the king moves two squares, so bring the rook across to the other side of it
     // (x = 1 is the h-file, so king side is towards x = 1)
@@ -143,7 +143,7 @@ void ChessBoard::applyMove(Pos from, Pos to, Piece promotion) {
     // save last move made
     LastMoveTo = to;
     LastMoveFrom = from;
-    LastMove = moverPieces();
+    LastMovePiece = moverPieces()[from];
 
     opponentPieces().erase(to);
     moverPieces()[to] = moverPieces()[from];
@@ -219,7 +219,7 @@ ChessBoard::CheckStatus ChessBoard::StatusCheck(ChessBoard& board) {
     if ( isKingUnderAttack(turn) ) {
         bool canEscape = false; // Assuming the king can escape
         // Check if the king can move to a safe position
-        for (const auto& move : possibleMoves(board, kingPos, board.LastMoveTo, board.LastMoveFrom, LastMove[LastMoveTo])) {
+        for (const auto& move : possibleMoves(board, kingPos, board.LastMoveTo, board.LastMoveFrom, LastMovePiece)) {
             (void)move;
             if (!isKingUnderAttack(turn)) {
                 canEscape = true; // King can escape
