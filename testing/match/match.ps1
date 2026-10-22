@@ -5,12 +5,15 @@
 .EXAMPLE
   .\testing\match\match.ps1                          # 20 games each vs Stockfish 1320, 1500, 1700
   .\testing\match\match.ps1 -Elo 1320 -Games 50      # more games = smaller error bars
-  .\testing\match\match.ps1 -TimeControl "40/60"     # 40 moves in 60 s
+  .\testing\match\match.ps1 -TimeControl "120+1"     # the time control UCI_Elo is calibrated at
+  .\testing\match\match.ps1 -Name Chess_bot_v2       # label a new engine version in the results
+  .\testing\match\summary.ps1                        # W-L-D of every engine vs every opponent
 
   Needs build\chess_uci.exe (cmake --build build), a Stockfish .exe in .\stockfish\,
   and cutechess-cli (comes with Cute Chess). Games are saved to testing\match\results\.
 #>
 param(
+    [string]$Name = "Chess_bot",
     [int[]]$Elo = @(1320, 1500, 1700),
     [int]$Games = 20,
     [string]$TimeControl = "10+0.1",
@@ -35,13 +38,13 @@ New-Item -ItemType Directory -Force $results | Out-Null
 $summary = @()
 
 foreach ($level in $Elo) {
-    Write-Host "`n=== Chess_bot vs Stockfish (UCI_Elo $level): $Games games, $TimeControl ===" -ForegroundColor Cyan
+    Write-Host "`n=== $Name vs Stockfish (UCI_Elo $level): $Games games, $TimeControl ===" -ForegroundColor Cyan
     $pgn = Join-Path $results "vs_stockfish_$level.pgn"
     $scoreLine = ""; $eloLine = ""
 
     # -repeat plays each opening twice with colours swapped; draw/resign rules shorten decided games
     & $CuteChess `
-        -engine name=Chess_bot "cmd=$Engine" `
+        -engine "name=$Name" "cmd=$Engine" `
         -engine "name=Stockfish_$level" "cmd=$Stockfish" option.UCI_LimitStrength=true "option.UCI_Elo=$level" option.Threads=1 `
         -each proto=uci "tc=$TimeControl" `
         -games $Games -repeat -recover -concurrency $Concurrency `
@@ -61,7 +64,7 @@ foreach ($level in $Elo) {
         if ($Matches[1] -notmatch "inf") { $estimate = "{0:N0} +/- {1}" -f ($level + [double]$Matches[1]), $Matches[2] }
         else { $estimate = "out of range (won or lost every game)" }
     }
-    $summary += [pscustomobject]@{ "Stockfish Elo" = $level; "Result (W-L-D)" = ($scoreLine -replace "^Score of .*?: ", ""); "Chess_bot estimate" = $estimate }
+    $summary += [pscustomobject]@{ "Stockfish Elo" = $level; "Result (W-L-D)" = ($scoreLine -replace "^Score of .*?: ", ""); "$Name estimate" = $estimate }
 }
 
 Write-Host "`n=== Summary ===" -ForegroundColor Cyan
