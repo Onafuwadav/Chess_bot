@@ -72,6 +72,24 @@ std::vector<Pos> possibleMoves(ChessBoard& board, const Pos& from, const Pos& La
         for (auto dy : { -1,0,1 })
             for (auto dx : { -1,0,1 })
                 addMove(dy, dx);
+
+        // Castling: king on its start square, right not lost, squares between empty,
+        // and the king isn't in check and doesn't pass through an attacked square
+        // (landing in check is caught by the legality filter below)
+        {
+            bool white = board.turn == ChessBoard::Turn::white;
+            ChessBoard::Turn them = white ? ChessBoard::Turn::black : ChessBoard::Turn::white;
+            int kingSideRight = white ? ChessBoard::WhiteKingSide : ChessBoard::BlackKingSide;
+            int queenSideRight = white ? ChessBoard::WhiteQueenSide : ChessBoard::BlackQueenSide;
+            if (from == Pos(4, white ? 1 : 8) && !board.isSquareAttacked(from, them)) {
+                if ((board.castlingRights & kingSideRight) && isFree(-1, 0) && isFree(-2, 0)
+                    && !board.isSquareAttacked(Pos(from, -1, 0), them))
+                    moves.push_back(Pos(from, -2, 0));
+                if ((board.castlingRights & queenSideRight) && isFree(1, 0) && isFree(2, 0) && isFree(3, 0)
+                    && !board.isSquareAttacked(Pos(from, 1, 0), them))
+                    moves.push_back(Pos(from, 2, 0));
+            }
+        }
         break;
 
     // Calculate moves for queen(rook + bishop)

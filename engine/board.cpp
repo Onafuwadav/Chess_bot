@@ -20,6 +20,7 @@ void ChessBoard::reset() {
         ++n;
     }
     black_pieces[Pos(5, 8)] = white_pieces[Pos(5, 1)] = Piece::queen;
+    castlingRights = WhiteKingSide | WhiteQueenSide | BlackKingSide | BlackQueenSide;
 }
 
 Pos ChessBoard::fromAlgebraic(const std::string& square) {
@@ -73,7 +74,15 @@ bool ChessBoard::loadFEN(const std::string& fen) {
 
     turn = fields[1] == "b" ? Turn::black : Turn::white;
 
-    // Castling rights (fields[2]) aren't tracked yet
+    castlingRights = 0;
+    if (fields.size() > 2) {
+        for (char c : fields[2]) {
+            if (c == 'K') castlingRights |= WhiteKingSide;
+            if (c == 'Q') castlingRights |= WhiteQueenSide;
+            if (c == 'k') castlingRights |= BlackKingSide;
+            if (c == 'q') castlingRights |= BlackQueenSide;
+        }
+    }
 
     // En passant square: recreate the double pawn push that allows it
     if (fields.size() > 3 && fields[3] != "-") {
@@ -108,6 +117,26 @@ void ChessBoard::applyMove(Pos from, Pos to) {
         else
             opponentPieces().erase(Pos(to.x, to.y+1));
      }
+
+    // Castling: the king moves two squares, so bring the rook across to the other side of it
+    // (x = 1 is the h-file, so king side is towards x = 1)
+    if (moverPieces()[from] == Piece::king && (to.x - from.x == 2 || to.x - from.x == -2)) {
+        bool kingSide = to.x < from.x;
+        Pos rookFrom(kingSide ? 1 : 8, from.y);
+        Pos rookTo(kingSide ? 3 : 5, from.y);
+        moverPieces().erase(rookFrom);
+        moverPieces()[rookTo] = Piece::rook;
+    }
+
+    // A king move loses both rights; moving from or capturing on a corner loses that rook's right
+    if (moverPieces()[from] == Piece::king)
+        castlingRights &= turn == Turn::white ? ~(WhiteKingSide | WhiteQueenSide) : ~(BlackKingSide | BlackQueenSide);
+    for (const Pos& p : { from, to }) {
+        if (p == Pos(1, 1)) castlingRights &= ~WhiteKingSide;
+        if (p == Pos(8, 1)) castlingRights &= ~WhiteQueenSide;
+        if (p == Pos(1, 8)) castlingRights &= ~BlackKingSide;
+        if (p == Pos(8, 8)) castlingRights &= ~BlackQueenSide;
+    }
 
     // save last move made
     LastMoveTo = to;

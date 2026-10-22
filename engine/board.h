@@ -47,6 +47,10 @@ struct ChessBoard {
     Pos LastMoveFrom;
     std::map<Pos, Piece> LastMove; // Saving last move made
     std::map<Pos, Piece> white_pieces, black_pieces; // Maps to store positions of pieces for each player
+
+    // Castling rights as bit flags (lost when the king or that rook moves, or the rook is captured)
+    enum Castle { WhiteKingSide = 1, WhiteQueenSide = 2, BlackKingSide = 4, BlackQueenSide = 8 };
+    int castlingRights = 0;
     std::map<Pos, Piece>& moverPieces() { return turn == Turn::white ? white_pieces : black_pieces; } // Function to retrieve pieces of the current player
     std::map<Pos, Piece>& opponentPieces() { return turn == Turn::white ? black_pieces : white_pieces; } // Function to retrieve pieces of the opponent player
 
