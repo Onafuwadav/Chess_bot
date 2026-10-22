@@ -74,7 +74,7 @@ $groups = $tally.Keys | ForEach-Object { $p = $_ -split '\|'; [pscustomobject]@{
 foreach ($group in $groups) {
     $engineName = $group.Group[0].Engine
     $tc = $group.Group[0].TC
-    Write-Host "`n=== $engineName at $tc ===" -ForegroundColor Cyan
+    Write-Host "=== $engineName at $tc ===" -ForegroundColor Cyan
 
     $rows = @()
     $ratedGames = @()   # (opponent rating, points) for the overall estimate
@@ -106,7 +106,9 @@ foreach ($group in $groups) {
             for ($i = 0; $i -lt $t.D; $i++) { $ratedGames += , @($rating, 0.5) }
         }
     }
-    $rows | Format-Table -AutoSize | Out-String -Width 200 | Write-Host
+    # Format-Table pads with blank lines; trim them so the overall line sits under its table
+    Write-Host ($rows | Format-Table -AutoSize | Out-String -Width 200).Trim()
+    Write-Host ""
 
     # Overall estimate: the rating R at which the expected score against all the opponents
     # faced, 1 / (1 + 10^((opp - R) / 400)) per game, adds up to the points actually scored
@@ -125,4 +127,5 @@ foreach ($group in $groups) {
             Write-Host ("Overall estimate from {0} games: about {1:0} (on Stockfish's UCI_Elo scale)" -f $ratedGames.Count, $lo) -ForegroundColor Green
         }
     }
+    Write-Host "`n"   # two blank lines before the next engine / time control
 }
