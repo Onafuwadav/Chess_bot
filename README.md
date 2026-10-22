@@ -153,10 +153,10 @@ colours swapped, and estimates a rating from the score:
 `Elo difference = -400 x log10(1 / score - 1)`.
 
 ```powershell
-.\testing\match\match.ps1 -Elo 1320,1500,1700 -Games 50 -TimeControl "40/60"
+.\testing\match\match.ps1 -Elo ...,... -Games ... -TimeControl "..."
 ```
-
-First results, 10 games per level at 5 s + 0.05 s per game:
+Testing against 1320, 1500, 1700:
+First results, 10 games per level at 5s + 0.05s per game:
 
 | Stockfish UCI_Elo | Chess_bot W-L-D |
 |---|---|
@@ -165,9 +165,19 @@ First results, 10 games per level at 5 s + 0.05 s per game:
 | 1700 | 3-7-0 |
 | 1900 | 0-10-0 |
 
-That suggests roughly **1400-1600** at this fast time control. Ten games per level gives error
+That suggests roughly **1400-1600** ELO at this fast time control. Ten games per level gives error
 bars of a few hundred Elo, and Stockfish's rating scale is calibrated at a different time control,
 so treat this as a rough first estimate.
+
+Testing against 1400, 1500, 1600, 1700:
+Proper test results, 50 games per level at 120s + 1s per game:
+| Stockfish UCI_Elo | Chess_bot W-L-D |
+|---|---|
+| 1320 | x-x-x |
+| 1500 | x-x-x |
+| 1700 | x-x-x |
+
+That suggests roughly **xxxx-xxxx** ELO at this time control. Fifty games per level(took around 3hrs) gives a pretty accurate Elo rating, and this is the time control at which Stockfish's rating scale is calibrated at making it a more accurate estimate.
 
 Needs [Cute Chess](https://github.com/cutechess/cutechess) (for cutechess-cli) and a
 [Stockfish](https://stockfishchess.org/download/) `.exe` unzipped into `stockfish/` (not committed).
@@ -177,7 +187,7 @@ Needs [Cute Chess](https://github.com/cutechess/cutechess) (for cutechess-cli) a
 ### In a chess GUI
 `chess_uci.exe` works in any UCI GUI.
 
-The repo includes a Chess board and picece theme made from Joszs's hand-drawn
+The repo includes a hand drawn chess board and piece theme made by Joszs
 [Chess Pieces and Board Pack](https://joszs.itch.io/chess-pack) (CC BY 4.0).
 
 ### In the terminal
