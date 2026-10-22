@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
         board.loadFEN(p[1]);
         searchNodes = 0;
         auto start = std::chrono::steady_clock::now();
-        Move m = minimax(board, depth, board.turn == ChessBoard::Turn::black);
+        Move m = minimax(board, depth, -INFINITE_SCORE, INFINITE_SCORE, board.turn == ChessBoard::Turn::black);
         double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
         std::string move = ChessBoard::toAlgebraic(m.from) + ChessBoard::toAlgebraic(m.to);
         std::printf("%-12s %-6s %12llu %10.0f %12.0f\n", p[0], move.c_str(),

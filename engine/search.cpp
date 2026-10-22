@@ -1,10 +1,14 @@
 #include "search.h"
 #include "eval.h"
 #include "movegen.h"
+#include <algorithm>
 
 uint64_t searchNodes = 0;
 
-Move minimax(ChessBoard& board, int depth, bool minimize) {
+// Alpha-beta: alpha is the score white (the maximiser) is already sure of, beta the score
+// black (the minimiser) is already sure of. Once alpha >= beta the side choosing at the
+// parent would never let the game reach this position, so the remaining moves are skipped.
+Move minimax(ChessBoard& board, int depth, int alpha, int beta, bool minimize) {
     ++searchNodes;
     Move best_move;
     best_move.score = -1000000 + 2000000 * minimize;
@@ -25,13 +29,20 @@ Move minimax(ChessBoard& board, int depth, bool minimize) {
             for (ChessBoard::Piece piece : promotionPieces) {
                 ChessBoard branch = board;
                 branch.applyMove(from.first, to, piece);
-                Move option = minimax(branch, depth - 1, !minimize);
-                if ((option.score > best_move.score && !minimize) || (option.score < best_move.score && minimize)) {
+                Move option = minimax(branch, depth - 1, alpha, beta, !minimize);
+                // (the first move is always taken, so a move is returned even if every move gets mated)
+                if (best_move.from.x == -1 || (option.score > best_move.score && !minimize) || (option.score < best_move.score && minimize)) {
                     best_move.score = option.score;
                     best_move.from = from.first;
                     best_move.to = to;
                     best_move.promotion = piece;
                 }
+                if (minimize)
+                    beta = std::min(beta, best_move.score);
+                else
+                    alpha = std::max(alpha, best_move.score);
+                if (alpha >= beta)
+                    return best_move; // cut-off
                 if (!promotion)
                     break;
             }
@@ -47,7 +58,7 @@ Move minimax(ChessBoard& board, int depth, bool minimize) {
 Move AIMove(ChessBoard& board) {
     // score() is white minus black, so white maximises and black minimises
     bool minimize = board.turn == ChessBoard::Turn::black;
-    Move m = minimax(board, 4, minimize);
+    Move m = minimax(board, 4, -INFINITE_SCORE, INFINITE_SCORE, minimize);
     board.makeMove(m.from, m.to, m.promotion);
     return m;
 }
