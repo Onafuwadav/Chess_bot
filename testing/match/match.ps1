@@ -88,7 +88,8 @@ foreach ($level in $Elo) {
             if ($line -match '^\.\.\.\s+(.*)$') {
                 # End-of-match totals ("...      Chess_bot playing White: ..."): separate them from the games
                 if (-not $separatorShown) { Write-Host ("-" * 52); $separatorShown = $true }
-                Write-Host $Matches[1]
+                # "White vs Black" counts results by colour regardless of engine, so it's left out
+                if ($Matches[1] -notmatch '^White vs Black') { Write-Host $Matches[1] }
             } elseif ($line -match "^Elo difference") {
                 # "Elo difference: x +/- y, LOS: z %, DrawRatio: w %" -> one figure per line
                 $eloLine = $line
