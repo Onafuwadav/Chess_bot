@@ -1,5 +1,6 @@
 #pragma once
 #include <map>
+#include <string>
 
 struct Pos {
     int x, y;
@@ -51,6 +52,15 @@ struct ChessBoard {
 
     // Function to reset the chessboard to initial state
     void reset();
+
+    // Sets up the board from a FEN string, e.g. the start position is
+    // "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1". Returns false if it can't be parsed.
+    bool loadFEN(const std::string& fen);
+
+    // Board coordinates: y is the rank, and x = 1 is the h-file up to x = 8 for the a-file
+    // (printBoard shows the board from black's side). These convert to and from squares like "e4".
+    static Pos fromAlgebraic(const std::string& square);
+    static std::string toAlgebraic(const Pos& p);
 
     // Switches turn between black and white player after turn end
     void flipTurn() { turn = turn == Turn::white ? Turn::black : Turn::white; }

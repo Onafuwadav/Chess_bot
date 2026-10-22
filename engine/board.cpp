@@ -1,6 +1,7 @@
 #include "board.h"
 #include "movegen.h"
 #include <algorithm>
+#include <cctype>
 #include <iostream>
 #include <vector>
 
@@ -19,6 +20,72 @@ void ChessBoard::reset() {
         ++n;
     }
     black_pieces[Pos(5, 8)] = white_pieces[Pos(5, 1)] = Piece::queen;
+}
+
+Pos ChessBoard::fromAlgebraic(const std::string& square) {
+    if (square.size() != 2 || square[0] < 'a' || square[0] > 'h' || square[1] < '1' || square[1] > '8')
+        return Pos();
+    return Pos('h' - square[0] + 1, square[1] - '0');
+}
+
+std::string ChessBoard::toAlgebraic(const Pos& p) {
+    return std::string{ char('h' - p.x + 1), char('0' + p.y) };
+}
+
+bool ChessBoard::loadFEN(const std::string& fen) {
+    // Split into fields: placement, side to move, castling, en passant, (clocks are ignored)
+    std::vector<std::string> fields;
+    std::string field;
+    for (char c : fen + ' ') {
+        if (c != ' ') field += c;
+        else if (!field.empty()) { fields.push_back(field); field.clear(); }
+    }
+    if (fields.size() < 2)
+        return false;
+
+    white_pieces.clear();
+    black_pieces.clear();
+    LastMove.clear();
+    LastMoveTo = Pos();
+    LastMoveFrom = Pos();
+
+    // Placement goes rank 8 to rank 1, each rank from the a-file to the h-file
+    int y = 8, file = 0;
+    for (char c : fields[0]) {
+        if (c == '/') { --y; file = 0; continue; }
+        if (c >= '1' && c <= '8') { file += c - '0'; continue; }
+        bool white = std::isupper(static_cast<unsigned char>(c));
+        Piece piece;
+        switch (std::tolower(static_cast<unsigned char>(c))) {
+        case 'p': piece = white ? Piece::white_pawn : Piece::black_pawn; break;
+        case 'n': piece = Piece::knight; break;
+        case 'b': piece = Piece::bishop; break;
+        case 'r': piece = Piece::rook; break;
+        case 'q': piece = Piece::queen; break;
+        case 'k': piece = Piece::king; break;
+        default: return false;
+        }
+        if (file > 7 || y < 1)
+            return false;
+        (white ? white_pieces : black_pieces)[Pos(8 - file, y)] = piece;
+        ++file;
+    }
+
+    turn = fields[1] == "b" ? Turn::black : Turn::white;
+
+    // Castling rights (fields[2]) aren't tracked yet
+
+    // En passant square: recreate the double pawn push that allows it
+    if (fields.size() > 3 && fields[3] != "-") {
+        Pos ep = fromAlgebraic(fields[3]);
+        if (ep.x < 0 || (ep.y != 3 && ep.y != 6))
+            return false;
+        int dir = ep.y == 3 ? 1 : -1; // rank 3: white pawn went up, rank 6: black pawn went down
+        LastMoveFrom = Pos(ep.x, ep.y - dir);
+        LastMoveTo = Pos(ep.x, ep.y + dir);
+        LastMove = opponentPieces();
+    }
+    return true;
 }
 
 // Function to execute move on board(checking first if move is possible and legal) then switching turn
