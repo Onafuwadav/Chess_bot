@@ -41,6 +41,12 @@ add_executable(chess_cli play/cli/main.cpp)
 target_link_libraries(chess_cli PRIVATE engine)
 chess_warnings(chess_cli)
 
+# UCI engine for chess GUIs (ChessX, Cute Chess) and cutechess-cli matches
+find_package(Threads REQUIRED)
+add_executable(chess_uci play/uci/main.cpp)
+target_link_libraries(chess_uci PRIVATE engine Threads::Threads)
+chess_warnings(chess_uci)
+
 # Search benchmark: positions searched and time at a fixed depth
 add_executable(engine_bench testing/bench/bench.cpp)
 target_link_libraries(engine_bench PRIVATE engine)

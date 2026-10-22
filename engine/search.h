@@ -27,5 +27,8 @@ Move minimax(ChessBoard& board, int depth, int alpha, int beta, bool minimize, i
 Move searchBestMove(ChessBoard& board, int maxDepth, int timeLimitMs,
     const std::function<void(int depth, const Move& best)>& onDepth = nullptr);
 
+// Asks a running searchBestMove to finish now and return its best move so far (safe from another thread)
+void stopSearch();
+
 // Picks the engine's move and plays it on the board
 Move AIMove(ChessBoard& board, int timeLimitMs = 2000);

@@ -2,6 +2,7 @@
 #include "eval.h"
 #include "movegen.h"
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 
 uint64_t searchNodes = 0;
@@ -9,8 +10,9 @@ uint64_t searchNodes = 0;
 namespace {
 
 // Time control: the search stops once the deadline passes (checked every 1024 positions)
+// or when stopSearch() is called (atomic, since UCI calls it from another thread)
 bool timeLimited = false;
-bool stopped = false;
+std::atomic<bool> stopped{ false };
 std::chrono::steady_clock::time_point deadline;
 
 bool outOfTime() {
@@ -172,6 +174,10 @@ Move searchBestMove(ChessBoard& board, int maxDepth, int timeLimitMs,
     }
     timeLimited = false;
     return best;
+}
+
+void stopSearch() {
+    stopped = true;
 }
 
 Move AIMove(ChessBoard& board, int timeLimitMs) {
