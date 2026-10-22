@@ -4,6 +4,7 @@
 struct Move {
     Pos from, to;
     int score;
+    ChessBoard::Piece promotion = ChessBoard::Piece::queen; // only used when a pawn reaches the last rank
 };
 
 Move minimax(ChessBoard& board, int depth, bool minimize);

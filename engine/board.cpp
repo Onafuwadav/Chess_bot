@@ -98,17 +98,19 @@ bool ChessBoard::loadFEN(const std::string& fen) {
 }
 
 // Function to execute move on board(checking first if move is possible and legal) then switching turn
-//######(change to add piece square tables and such and to allow for user to choose what piece to promote the pawn to)#######
-bool ChessBoard::makeMove(Pos from, Pos to) {
+//######(change to add piece square tables and such)#######
+bool ChessBoard::makeMove(Pos from, Pos to, Piece promotion) {
     std::vector<Pos> allowed = possibleMoves(*this, from, LastMoveTo, LastMoveFrom, LastMove[LastMoveTo]);
     if (find(allowed.begin(), allowed.end(), to) == allowed.end())
         return false;
+    if (promotion != Piece::queen && promotion != Piece::rook && promotion != Piece::bishop && promotion != Piece::knight)
+        return false;
 
-    applyMove(from, to);
+    applyMove(from, to, promotion);
     return true;
 }
 
-void ChessBoard::applyMove(Pos from, Pos to) {
+void ChessBoard::applyMove(Pos from, Pos to, Piece promotion) {
     // check for en-passant
      if((LastMove[LastMoveTo] == Piece::white_pawn || LastMove[LastMoveTo] == Piece::black_pawn) && (moverPieces()[from] == Piece::white_pawn || moverPieces()[from] == Piece::black_pawn)
       && (!(white_pieces.count(to) || black_pieces.count(to))) && (LastMoveTo.x == from.x - 1 || LastMoveTo.x == from.x + 1) && (LastMoveTo.y == to.y)){
@@ -146,9 +148,9 @@ void ChessBoard::applyMove(Pos from, Pos to) {
     opponentPieces().erase(to);
     moverPieces()[to] = moverPieces()[from];
     moverPieces().erase(from);
-    // allow for user to choose what piece to promote the pawn to not just queen
+    // Promotion: the pawn becomes the chosen piece
     if ((moverPieces()[to] == Piece::white_pawn || moverPieces()[to] == Piece::black_pawn) && (to.y == 1 || to.y == 8))
-        moverPieces()[to] = Piece::queen;
+        moverPieces()[to] = promotion;
     flipTurn();
 }
 

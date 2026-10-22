@@ -69,11 +69,12 @@ struct ChessBoard {
     // Switches turn between black and white player after turn end
     void flipTurn() { turn = turn == Turn::white ? Turn::black : Turn::white; }
 
-    // Function to execute move on board(checking first if move is possible and legal) then switching turn
-    bool makeMove(Pos from, Pos to);
+    // Function to execute move on board(checking first if move is possible and legal) then switching turn.
+    // 'promotion' is the piece a pawn becomes when it reaches the last rank.
+    bool makeMove(Pos from, Pos to, Piece promotion = Piece::queen);
 
     // Plays the move without checking it is allowed (used by makeMove and by the legality check)
-    void applyMove(Pos from, Pos to);
+    void applyMove(Pos from, Pos to, Piece promotion = Piece::queen);
 
     // True if any piece of side 'by' attacks the square
     bool isSquareAttacked(const Pos& square, Turn by) const;

@@ -68,7 +68,7 @@ TEST_CASE("Perft: position 4", "[perft][!shouldfail]") {
     checkPerft(kPosition4, { 6, 264, 9467 });
 }
 
-TEST_CASE("Perft: position 5", "[perft][!shouldfail]") {
+TEST_CASE("Perft: position 5", "[perft]") {
     checkPerft(kPosition5, { 44, 1486, 62379 });
 }
 
@@ -92,7 +92,7 @@ TEST_CASE("Perft deep: position 4", "[perft][.slow][!shouldfail]") {
     checkPerft(kPosition4, { 422333 }, 4);
 }
 
-TEST_CASE("Perft deep: position 5", "[perft][.slow][!shouldfail]") {
+TEST_CASE("Perft deep: position 5", "[perft][.slow]") {
     checkPerft(kPosition5, { 2103487 }, 4);
 }
 

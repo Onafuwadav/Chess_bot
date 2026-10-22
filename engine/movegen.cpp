@@ -3,6 +3,21 @@
 
 using Piece = ChessBoard::Piece;
 
+bool isPromotion(const ChessBoard& board, const Pos& from, const Pos& to) {
+    const auto& own = board.turn == ChessBoard::Turn::white ? board.white_pieces : board.black_pieces;
+    auto it = own.find(from);
+    return it != own.end() && (it->second == Piece::white_pawn || it->second == Piece::black_pawn) && (to.y == 1 || to.y == 8);
+}
+
+char promotionLetter(Piece piece) {
+    switch (piece) {
+    case Piece::knight: return 'n';
+    case Piece::rook: return 'r';
+    case Piece::bishop: return 'b';
+    default: return 'q';
+    }
+}
+
 // Function to generate possible moves for a given piece
 std::vector<Pos> possibleMoves(ChessBoard& board, const Pos& from, const Pos& LastTo, const Pos& Lastfrom, Piece lastpiece) {
     std::vector<Pos> moves; // Initialize vector to store possible moves

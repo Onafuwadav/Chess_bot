@@ -41,7 +41,7 @@ void printBoard(ChessBoard& board) {
 }
 
 void printHelp() {
-    std::cout << std::endl << "* h: help, q: quit, p: show board, c: toggle show coordinates inside squares" << std::endl << "* Input format: yxyx is from-to coordinates, e.g: 1715 moves (x,y)=(1,7) to (x,y)=(1,5)" << std::endl << std::endl;
+    std::cout << std::endl << "* h: help, q: quit, p: show board, c: toggle show coordinates inside squares" << std::endl << "* Input format: yxyx is from-to coordinates, e.g: 1715 moves (x,y)=(1,7) to (x,y)=(1,5)" << std::endl << "* Promote by adding q, r, b or n, e.g: 2728n (queen if left out)" << std::endl << std::endl;
 }
 
 /* False to exit */
@@ -77,13 +77,24 @@ illegalmove:
         goto illegalmove;
     }
     Pos from(-1, -1), to(-1, -1);
-    if (move.length() == 4) {
+    Piece promotion = Piece::queen;
+    if (move.length() == 4 || move.length() == 5) {
         from.x = move[0] - '0';
         from.y = move[1] - '0';
         to.x = move[2] - '0';
         to.y = move[3] - '0';
     }
-    if (!board.makeMove(from, to)) {
+    // Optional 5th letter picks the promotion piece, e.g. 2728n
+    if (move.length() == 5) {
+        switch (move[4]) {
+        case 'q': promotion = Piece::queen; break;
+        case 'r': promotion = Piece::rook; break;
+        case 'b': promotion = Piece::bishop; break;
+        case 'n': promotion = Piece::knight; break;
+        default: promotion = Piece::king; break; // not allowed, so makeMove rejects it
+        }
+    }
+    if (!board.makeMove(from, to, promotion)) {
         std::cout << "* Illegal move" << std::endl;
         move = "";
         goto illegalmove;
