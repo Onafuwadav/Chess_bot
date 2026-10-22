@@ -68,7 +68,14 @@ struct ChessBoard {
     // Function to execute move on board(checking first if move is possible and legal) then switching turn
     bool makeMove(Pos from, Pos to);
 
-    bool isKingUnderAttack(ChessBoard& board, Turn whichKing);
+    // Plays the move without checking it is allowed (used by makeMove and by the legality check)
+    void applyMove(Pos from, Pos to);
+
+    // True if any piece of side 'by' attacks the square
+    bool isSquareAttacked(const Pos& square, Turn by) const;
+
+    // True if whichKing's king is in check
+    bool isKingUnderAttack(Turn whichKing) const;
     CheckStatus StatusCheck(ChessBoard& board);
 
     // add check/checkmate function

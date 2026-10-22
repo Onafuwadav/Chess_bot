@@ -95,6 +95,11 @@ bool ChessBoard::makeMove(Pos from, Pos to) {
     if (find(allowed.begin(), allowed.end(), to) == allowed.end())
         return false;
 
+    applyMove(from, to);
+    return true;
+}
+
+void ChessBoard::applyMove(Pos from, Pos to) {
     // check for en-passant
      if((LastMove[LastMoveTo] == Piece::white_pawn || LastMove[LastMoveTo] == Piece::black_pawn) && (moverPieces()[from] == Piece::white_pawn || moverPieces()[from] == Piece::black_pawn)
       && (!(white_pieces.count(to) || black_pieces.count(to))) && (LastMoveTo.x == from.x - 1 || LastMoveTo.x == from.x + 1) && (LastMoveTo.y == to.y)){
@@ -116,32 +121,56 @@ bool ChessBoard::makeMove(Pos from, Pos to) {
     if ((moverPieces()[to] == Piece::white_pawn || moverPieces()[to] == Piece::black_pawn) && (to.y == 1 || to.y == 8))
         moverPieces()[to] = Piece::queen;
     flipTurn();
-    return true;
 }
 
-bool ChessBoard::isKingUnderAttack(ChessBoard& board, Turn whichKing) {
-    Piece kingPiece = Piece::king;
-    Turn opponentTurn = whichKing;
-    (void)opponentTurn;
+// Looks outward from the square for each kind of attacker, instead of
+// generating every enemy move: about 50 lookups at most.
+bool ChessBoard::isSquareAttacked(const Pos& square, Turn by) const {
+    const std::map<Pos, Piece>& attackers = by == Turn::white ? white_pieces : black_pieces;
+    auto attackerAt = [&](int dx, int dy, Piece piece) -> bool {
+        auto it = attackers.find(Pos(square, dx, dy));
+        return it != attackers.end() && it->second == piece;
+    };
+    auto isEmpty = [&](int dx, int dy) -> bool {
+        Pos p(square, dx, dy);
+        return !white_pieces.count(p) && !black_pieces.count(p);
+    };
+    auto isInsideBoard = [&](int dx, int dy) -> bool { Pos p(square, dx, dy); return p.x < 9 && p.x > 0 && p.y < 9 && p.y > 0; };
 
-    Pos kingPos;
-    for (const auto& piece : board.opponentPieces()) {
-        if (piece.second == kingPiece) {
-            kingPos = piece.first;
-            break;
-        }
+    // Pawns attack diagonally forward, so look one rank behind the square
+    if (by == Turn::white) {
+        if (attackerAt(-1, -1, Piece::white_pawn) || attackerAt(1, -1, Piece::white_pawn)) return true;
+    } else {
+        if (attackerAt(-1, 1, Piece::black_pawn) || attackerAt(1, 1, Piece::black_pawn)) return true;
     }
 
-    for (const auto& piece : board.moverPieces()) {
-        std::vector<Pos> currentMoves = possibleMoves(*this, piece.first, LastMoveTo, LastMoveFrom, LastMove[LastMoveTo]);
+    static const int knightJumps[8][2] = { {-2,-1},{-2,1},{2,-1},{2,1},{-1,-2},{-1,2},{1,-2},{1,2} };
+    for (auto& j : knightJumps)
+        if (attackerAt(j[0], j[1], Piece::knight)) return true;
 
-        // Check if the square to check is among the current possible moves
-        if (std::find(currentMoves.begin(), currentMoves.end(), kingPos) != currentMoves.end()) {
+    for (int dx = -1; dx <= 1; ++dx)
+        for (int dy = -1; dy <= 1; ++dy)
+            if ((dx || dy) && attackerAt(dx, dy, Piece::king)) return true;
+
+    // Sliding pieces: walk each ray to the first piece and see what it is
+    static const int rays[8][2] = { {0,1},{0,-1},{1,0},{-1,0},{1,1},{1,-1},{-1,1},{-1,-1} };
+    for (int r = 0; r < 8; ++r) {
+        Piece slider = r < 4 ? Piece::rook : Piece::bishop;
+        int dx = rays[r][0], dy = rays[r][1];
+        int n = 1;
+        while (isInsideBoard(dx * n, dy * n) && isEmpty(dx * n, dy * n))
+            ++n;
+        if (attackerAt(dx * n, dy * n, slider) || attackerAt(dx * n, dy * n, Piece::queen))
             return true;
-        }
-        else
-        return false;
     }
+    return false;
+}
+
+bool ChessBoard::isKingUnderAttack(Turn whichKing) const {
+    const std::map<Pos, Piece>& own = whichKing == Turn::white ? white_pieces : black_pieces;
+    for (const auto& piece : own)
+        if (piece.second == Piece::king)
+            return isSquareAttacked(piece.first, whichKing == Turn::white ? Turn::black : Turn::white);
     return false;
 }
 
@@ -156,12 +185,12 @@ ChessBoard::CheckStatus ChessBoard::StatusCheck(ChessBoard& board) {
     }
 
     // check for checkmate
-    if ( isKingUnderAttack(board, turn) ) {
+    if ( isKingUnderAttack(turn) ) {
         bool canEscape = false; // Assuming the king can escape
         // Check if the king can move to a safe position
         for (const auto& move : possibleMoves(board, kingPos, board.LastMoveTo, board.LastMoveFrom, LastMove[LastMoveTo])) {
             (void)move;
-            if (!isKingUnderAttack(board, turn)) {
+            if (!isKingUnderAttack(turn)) {
                 canEscape = true; // King can escape
                 break;
             }

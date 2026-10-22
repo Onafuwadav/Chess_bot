@@ -52,7 +52,7 @@ TEST_CASE("Square names convert both ways", "[fen]") {
     CHECK(ChessBoard::toAlgebraic(ChessBoard::fromAlgebraic("c6")) == "c6");
 }
 
-TEST_CASE("Perft: start position", "[perft][!shouldfail]") {
+TEST_CASE("Perft: start position", "[perft]") {
     checkPerft(kStartPos, { 20, 400, 8902, 197281 });
 }
 
@@ -72,7 +72,7 @@ TEST_CASE("Perft: position 5", "[perft][!shouldfail]") {
     checkPerft(kPosition5, { 44, 1486, 62379 });
 }
 
-TEST_CASE("Perft: position 6", "[perft][!shouldfail]") {
+TEST_CASE("Perft: position 6", "[perft]") {
     checkPerft(kPosition6, { 46, 2079, 89890 });
 }
 
@@ -96,6 +96,6 @@ TEST_CASE("Perft deep: position 5", "[perft][.slow][!shouldfail]") {
     checkPerft(kPosition5, { 2103487 }, 4);
 }
 
-TEST_CASE("Perft deep: position 6", "[perft][.slow][!shouldfail]") {
+TEST_CASE("Perft deep: position 6", "[perft][.slow]") {
     checkPerft(kPosition6, { 3894594 }, 4);
 }

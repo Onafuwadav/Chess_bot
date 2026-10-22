@@ -1,4 +1,5 @@
 #include "movegen.h"
+#include <algorithm>
 
 using Piece = ChessBoard::Piece;
 
@@ -13,8 +14,8 @@ std::vector<Pos> possibleMoves(ChessBoard& board, const Pos& from, const Pos& La
     auto isFree = [&](int dx, int dy) -> bool { return !isOwn(dx, dy) && isInsideBoard(dx, dy) && !isOpponent(dx, dy); };
 
     // Lambda to add a move to the list of possible moves
+    // (moves that put your own king in check are removed at the end)
     auto addMove = [&](int dx, int dy) -> bool {
-        // change this so you cant do a move that puts you in check
         if (isFree(dx, dy) || isOpponent(dx, dy)) {
             moves.push_back(Pos(from, dx, dy));
             return true;
@@ -93,5 +94,13 @@ std::vector<Pos> possibleMoves(ChessBoard& board, const Pos& from, const Pos& La
         for (int n = 1; n < 9 && addMove(-n, -n) && !isOpponent(-n, -n); ++n);
         break;
     }
+
+    // Remove moves that leave our own king in check: play each on a copy and look
+    ChessBoard::Turn us = board.turn;
+    moves.erase(std::remove_if(moves.begin(), moves.end(), [&](const Pos& to) {
+        ChessBoard branch = board;
+        branch.applyMove(from, to);
+        return branch.isKingUnderAttack(us);
+    }), moves.end());
     return moves;
 }
