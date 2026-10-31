@@ -18,7 +18,7 @@ testing/match/results/*
 !testing/match/results/README.md
 
 # Older builds
-builds/
+old_builds/
 
 # Release zip made by scripts/package.ps1
 dist/

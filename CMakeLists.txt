@@ -47,6 +47,24 @@ add_executable(chess_uci play/uci/main.cpp)
 target_link_libraries(chess_uci PRIVATE engine Threads::Threads)
 chess_warnings(chess_uci)
 
+# Keep every engine version: after each build whose source changed, copy chess_uci.exe to
+# old_builds/chess_uci_vN.exe and log it in old_builds/versions.txt. Off by default so CI and
+# other clones don't archive; turn on once with: cmake -B build -DCHESS_ARCHIVE_BUILDS=ON
+option(CHESS_ARCHIVE_BUILDS "Archive each new chess_uci.exe to old_builds/" OFF)
+set(CHESS_ARCHIVE_DIR "${CMAKE_SOURCE_DIR}/old_builds" CACHE PATH "Where archived engine builds go")
+if(CHESS_ARCHIVE_BUILDS)
+    # git records which commit each version came from (MSYS2's shell may not have it on PATH)
+    find_program(CHESS_GIT git HINTS "$ENV{ProgramFiles}/Git/cmd" "C:/Program Files/Git/cmd")
+    add_custom_command(TARGET chess_uci POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+            -DEXE=$<TARGET_FILE:chess_uci>
+            -DSOURCE_DIR=${CMAKE_SOURCE_DIR}
+            -DARCHIVE_DIR=${CHESS_ARCHIVE_DIR}
+            -DGIT=${CHESS_GIT}
+            -P ${CMAKE_SOURCE_DIR}/cmake/archive_build.cmake
+        VERBATIM)
+endif()
+
 # Search benchmark: positions searched and time at a fixed depth
 add_executable(engine_bench testing/bench/bench.cpp)
 target_link_libraries(engine_bench PRIVATE engine)
