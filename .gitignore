@@ -4,21 +4,21 @@ build/
 *.o
 *.obj
 
-# Editor / IDE settings
+# IDE settings
 .vscode/
 .vs/
 
-# Downloaded tools and assets (fetch them yourself, see README)
+# Downloaded tools and assets
 *.zip
 stockfish/*
 !stockfish/README.md
 
-# Match results from testing/match (keep the folder and its README, not the games)
+# Match results from testing/match
 testing/match/results/*
 !testing/match/results/README.md
 
 # Older builds
 old_builds/
 
-# Release zip made by scripts/package.ps1
 dist/
+dist-web/

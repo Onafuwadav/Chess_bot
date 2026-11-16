@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Browser Chess Engine</title>
+<style>
+  :root { --bg: #1d1a20; --panel: #29242e; --line: #4d4455; --ink: #f1e9dc; --dim: #b8aaa8; --accent: #ffb84d; --good: #7fd69a; --bad: #ff8f7a; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--ink); margin: 0; padding: 16px; line-height: 1.4; }
+  main { max-width: 980px; margin: 0 auto; display: grid; gap: 12px; }
+  h1 { font-size: 20px; margin: 0; }
+  h2 { font-size: 15px; margin: 0 0 6px; color: var(--accent); }
+  p { margin: 0; }
+  small, .dim { color: var(--dim); }
+  button, select, input { font: inherit; }
+  button { padding: 6px 12px; cursor: pointer; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; }
+  button:hover:not(:disabled), button:focus-visible { border-color: var(--accent); }
+  button:disabled { opacity: .5; cursor: default; }
+  select, input[type="text"] { padding: 6px 8px; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; min-width: 0; }
+  .tabs { display: flex; gap: 6px; }
+  .tabs button[aria-selected="true"] { background: var(--accent); color: #1d1a20; border-color: var(--accent); font-weight: 600; }
+  .layout { display: grid; grid-template-columns: minmax(0, 480px) minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 800px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  #board { display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); width: 100%; aspect-ratio: 1; border: 3px solid var(--ink); }
+  #board button { border: 0; border-radius: 0; padding: 0; font-size: min(44px, 9vw); line-height: 1; color: #111; }
+  #board .l { background: #e8d2ac; } #board .d { background: #a9794f; }
+  #board .sel { outline: 4px solid var(--accent); outline-offset: -4px; }
+  #board .to { box-shadow: inset 0 0 0 5px #4f9d69; }
+  #board .last { background-image: linear-gradient(#ffd98066, #ffd98066); }
+  #status { min-height: 1.4em; font-weight: 600; }
+  .side { display: grid; gap: 12px; min-width: 0; }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px; display: grid; gap: 8px; min-width: 0; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .row > select, .row > input[type="text"] { flex: 1 1 180px; }
+  dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; font-size: 14px; }
+  dt { color: var(--dim); }
+  dd { margin: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+  code, .mono { font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+  .pass { color: var(--good); } .fail { color: var(--bad); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Chess engine test page</h1>
+  <p><small><span id="version"></span></small></p>
+  <div class="tabs" role="tablist">
+    <button id="tab-play" role="tab" aria-selected="true" type="button">Play</button>
+    <button id="tab-test" role="tab" aria-selected="false" type="button">Testing</button>
+  </div>
+  <div class="layout">
+    <div>
+      <div id="board" aria-label="Chess board"></div>
+    </div>
+    <div class="side">
+      <p id="status" aria-live="polite">Loading engine</p>
+
+      <div id="panel-play" class="side">
+        <div class="box">
+          <p>You play white</p>
+          <div class="row"><button id="new" type="button">New game</button></div>
+        </div>
+      </div>
+
+      <div id="panel-test" class="side" hidden>
+        <div class="box">
+          <h2>Position</h2>
+          <div class="row"><select id="preset" aria-label="Preset position"></select></div>
+          <p class="dim" id="preset-note"></p>
+          <div class="row"><input id="fen" type="text" spellcheck="false" aria-label="FEN" placeholder="Or paste a FEN"><button id="load-fen" type="button">Load</button></div>
+        </div>
+        <div class="box">
+          <h2>Moves</h2>
+          <p class="dim">Click a piece, then a square. Only legal moves accepted</p>
+          <div class="row">
+            <button id="engine-move" type="button">Engine move</button>
+            <select id="think" aria-label="Thinking time"><option value="300">0.3 s</option><option value="1000" selected>1 s</option><option value="3000">3 s</option><option value="10000">10 s</option></select>
+            <select id="promo" aria-label="Promote to"><option value="q">Promote to queen</option><option value="r">Promote to rook</option><option value="b">Promote to bishop</option><option value="n">Promote to knight</option></select>
+          </div>
+          <div class="row"><button id="undo" type="button">Undo</button><button id="reset" type="button">Reset position</button></div>
+          <dl>
+            <dt>To move</dt><dd id="i-turn"></dd>
+            <dt>State</dt><dd id="i-state"></dd>
+            <dt>Legal moves</dt><dd id="i-legal" class="mono"></dd>
+            <dt>Played</dt><dd id="i-moves" class="mono"></dd>
+            <dt>Engine</dt><dd id="i-engine"></dd>
+          </dl>
+        </div>
+        <div class="box">
+          <h2>Perft</h2>
+          <p class="dim">Counts every position reachable in x number of moves from current board position and compare with published count</p>
+          <div class="row">
+            <select id="depth" aria-label="Depth"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select>
+            <button id="run-perft" type="button">Run perft count</button>
+          </div>
+          <p id="perft-out" class="mono"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+const PRESETS = [
+  { name: 'Start position', fen: START, note: 'Normal starting position', perft: [20, 400, 8902, 197281, 4865609] },
+  { name: 'Kiwipete', fen: 'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1', note: 'Standard stress test: castling, en passant, promotions, pins, checks', perft: [48, 2039, 97862, 4085603] },
+  { name: 'Rook Endgane', fen: '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1', note: 'Rook endgame with en passant capture exposing king along a rank', perft: [14, 191, 2812, 43238, 674624] },
+  { name: 'White in check', fen: 'r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1', note: 'White in check with promotions available', perft: [6, 264, 9467, 422333] },
+  { name: 'Common bug catcher', fen: 'rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8', note: 'Common bug catching position for promotion with capture, castling rights', perft: [44, 1486, 62379, 2103487] },
+  { name: 'Quiet middlegame', fen: 'r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10', note: 'Quiet middlegame good for search timing', perft: [46, 2079, 89890, 3894594] },
+  { name: 'Castling', fen: 'r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1', note: 'Kings and rooks only castling avalibale for both', perft: [26, 568, 13744, 314346] },
+  { name: 'En passant', fen: 'rnbqkbnr/ppp1pppp/8/8/3pP3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 2', note: 'White played e2 -> e4; black can d4 -> e3' },
+  { name: 'Promotion', fen: '8/P6k/8/8/8/8/7K/8 w - - 0 1', note: 'White promotes on a8' },
+  { name: 'Mate in one', fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4', note: 'Scholar’s mate. The engine should play h5f7' },
+  { name: 'Stalemate', fen: '7k/5Q2/6K1/8/8/8/8/8 b - - 0 1', note: 'Black has no legal move and is not in check' },
+  { name: 'Insufficient material', fen: '8/8/4k3/8/8/3K4/8/8 w - - 0 1', note: 'King vs king should report a draw' }
+];
+const GLYPH = { K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙', k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' };
+const $ = (id) => document.getElementById(id);
+const boardEl = $('board'), statusEl = $('status');
+const engine = new Worker('engine-worker.js');
+let mode = 'play', baseFen = START, preset = PRESETS[0];
+let squares, moves = [], legal = [], selected = null, last = null, turn = 'white', thinking = false, over = false, ready = false, nextId = 0, want = '';
+
+const name = (i) => 'abcdefgh'[i % 8] + (8 - Math.floor(i / 8));
+const index = (sq) => 'abcdefgh'.indexOf(sq[0]) + (8 - Number(sq[1])) * 8;
+
+// The piece placement part of a FEN as 64 squares, a8 first
+function place(fen) {
+  const out = [];
+  for (const ch of fen.split(' ')[0]) { if (ch === '/') continue; if (ch >= '1' && ch <= '8') for (let k = 0; k < Number(ch); k++) out.push(''); else out.push(ch); }
+  return out;
+}
+// Moves a piece on this page's copy of the board, including castling, en passant and promotion
+function apply(move) {
+  const from = index(move.slice(0, 2)), to = index(move.slice(2, 4)), piece = squares[from], white = piece === piece.toUpperCase();
+  if (piece.toLowerCase() === 'p' && from % 8 !== to % 8 && !squares[to]) squares[to + (white ? 8 : -8)] = '';
+  if (piece.toLowerCase() === 'k' && Math.abs(to - from) === 2) { const rookFrom = to > from ? to + 1 : to - 2, rookTo = to > from ? to - 1 : to + 1; squares[rookTo] = squares[rookFrom]; squares[rookFrom] = ''; }
+  squares[to] = move[4] ? (white ? move[4].toUpperCase() : move[4]) : piece; squares[from] = '';
+  moves.push(move); last = [from, to];
+}
+// Sets board to a position and replays a list of moves on it
+function setup(fen, replay) {
+  baseFen = fen; squares = place(fen); moves = []; selected = null; last = null; over = false; thinking = false; legal = [];
+  (replay || []).forEach(apply);
+}
+function draw() {
+  boardEl.textContent = '';
+  squares.forEach((piece, i) => {
+    const b = document.createElement('button'), sq = name(i);
+    b.type = 'button'; b.className = ((i + Math.floor(i / 8)) % 2 ? 'd' : 'l') + (selected === sq ? ' sel' : '') + (last && last.includes(i) ? ' last' : '')
+      + (selected && legal.some((m) => m.startsWith(selected + sq)) ? ' to' : '');
+    b.textContent = GLYPH[piece] || ''; b.setAttribute('aria-label', sq + (piece ? ' ' + piece : ''));
+    b.addEventListener('click', () => click(sq));
+    boardEl.appendChild(b);
+  });
+  $('engine-move').disabled = $('undo').disabled = $('run-perft').disabled = !ready || thinking;
+  $('undo').disabled = $('undo').disabled || !moves.length;
+  $('engine-move').disabled = $('engine-move').disabled || over || !legal.length;
+}
+function click(sq) {
+  if (!ready || thinking || over) return;
+  if (mode === 'play' && turn !== 'white') return;
+  const options = selected ? legal.filter((m) => m.startsWith(selected + sq)) : [];
+  if (options.length) {
+
+    // promotion gives four options
+    const pick = mode === 'test' ? $('promo').value : 'q';
+    apply(options.find((m) => m[4] === pick) || options[0]); selected = null;
+    ask(mode === 'play' ? 'think' : 'look');
+  } else selected = legal.some((m) => m.startsWith(sq)) ? sq : null;
+  draw();
+}
+function ask(what) {
+  want = what; thinking = what !== 'look';
+  if (what === 'think') statusEl.textContent = 'Chess_bot is thinking.';
+  if (what === 'perft') statusEl.textContent = 'Counting positions.';
+  engine.postMessage({ id: ++nextId, fen: baseFen, moves: moves.join(' '), timeMs: what === 'think' ? (mode === 'test' ? Number($('think').value) : 1000) : 0, perft: what === 'perft' ? Number($('depth').value) : 0 });
+  draw();
+}
+function describe(status) {
+  const parts = status.split(' '), side = parts[0], state = parts[1], mover = side === 'white' ? 'White' : 'Black';
+  turn = side; over = state === 'checkmate' || state === 'stalemate' || state === 'draw';
+  if (state === 'checkmate') return 'Checkmate. ' + (mode === 'play' ? (side === 'white' ? 'Chess_bot wins.' : 'You win.') : (side === 'white' ? 'Black wins.' : 'White wins.'));
+  if (state === 'stalemate') return 'Stalemate. It is a draw.';
+  if (state === 'draw') return 'Draw: ' + parts.slice(2).join(' ') + '.';
+  return (state === 'check' ? 'Check. ' : '') + (mode === 'play' ? 'Your move.' : mover + ' to move.');
+}
+function info(d) {
+  const parts = d.status.split(' ');
+  $('i-turn').textContent = parts[0];
+  $('i-state').textContent = parts.slice(1).join(' ');
+  $('i-legal').textContent = d.legal.length + (d.legal.length ? ': ' + d.legal.join(' ') : '');
+  $('i-moves').textContent = moves.length ? moves.join(' ') : 'none';
+}
+engine.onmessage = (e) => {
+  const d = e.data;
+  if (d.ready) { ready = true; if (d.version) $('version').textContent = 'Built from commit ' + String(d.version.commit).slice(0, 7) + '.'; ask('look'); return; }
+  if (d.id !== nextId) return;
+  if (!d.ok) { thinking = false; statusEl.textContent = 'The engine rejected that position or move.'; draw(); return; }
+  if (want === 'think' && d.bestmove) {
+    $('i-engine').textContent = 'played ' + d.bestmove + ' after ' + d.nodes.toLocaleString('en-GB') + ' positions';
+    apply(d.bestmove); ask('look'); return;
+  }
+  if (want === 'perft') {
+    if (typeof d.perft !== 'number') { $('perft-out').textContent = 'This needs the newer engine-worker.js.'; thinking = false; draw(); return; }
+    const depth = Number($('depth').value), expected = moves.length ? undefined : (preset && preset.fen === baseFen ? (preset.perft || [])[depth - 1] : undefined), out = $('perft-out');
+    out.textContent = 'perft(' + depth + ') = ' + d.perft.toLocaleString('en-GB') + ' in ' + d.perftMs + ' ms'
+      + (expected === undefined ? '. No published count for this position and depth.' : d.perft === expected ? '. Matches the published count.' : '. Expected ' + expected.toLocaleString('en-GB') + '.');
+    out.className = 'mono' + (expected === undefined ? '' : d.perft === expected ? ' pass' : ' fail');
+  }
+  thinking = false; legal = d.legal; statusEl.textContent = describe(d.status); info(d); draw();
+};
+
+function setMode(m) {
+  mode = m;
+  $('tab-play').setAttribute('aria-selected', String(m === 'play')); $('tab-test').setAttribute('aria-selected', String(m === 'test'));
+  $('panel-play').hidden = m !== 'play'; $('panel-test').hidden = m !== 'test';
+  if (m === 'play') { preset = PRESETS[0]; setup(START); } else loadPreset(Number($('preset').value));
+  if (ready) ask('look'); else draw();
+}
+function loadPreset(i) {
+  preset = PRESETS[i]; $('preset-note').textContent = preset.note; $('fen').value = preset.fen;
+  $('perft-out').textContent = ''; $('i-engine').textContent = '';
+  setup(preset.fen);
+}
+PRESETS.forEach((p, i) => { const o = document.createElement('option'); o.value = i; o.textContent = p.name; $('preset').appendChild(o); });
+$('tab-play').addEventListener('click', () => setMode('play'));
+$('tab-test').addEventListener('click', () => setMode('test'));
+$('new').addEventListener('click', () => { setup(START); ask('look'); });
+$('preset').addEventListener('change', () => { loadPreset(Number($('preset').value)); ask('look'); });
+$('load-fen').addEventListener('click', () => {
+  const fen = $('fen').value.trim(); if (!fen) return;
+  preset = PRESETS.find((p) => p.fen === fen) || null; $('preset-note').textContent = preset ? preset.note : 'Custom position.';
+  $('perft-out').textContent = ''; $('i-engine').textContent = '';
+  setup(fen); ask('look');
+});
+$('engine-move').addEventListener('click', () => ask('think'));
+$('undo').addEventListener('click', () => { setup(baseFen, moves.slice(0, -1)); ask('look'); });
+$('reset').addEventListener('click', () => { setup(baseFen); ask('look'); });
+$('run-perft').addEventListener('click', () => ask('perft'));
+setup(START); draw();
+</script>
+</body>
+</html>

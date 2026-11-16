@@ -245,6 +245,22 @@ Needs [Cute Chess](https://github.com/cutechess/cutechess) (for cutechess-cli) a
 [Stockfish](https://stockfishchess.org/download/) `.exe` unzipped into `stockfish/` (not committed).
 
 ## 2. Human vs AI
+### In browser
+Engine is compiled to WebAssembly with [Emscripten](https://emscripten.org/) and published with GitHub Pages at https://onafuwadav.github.io/Chess_bot/. Every push to `main` changing the engine rebuilds and publishes if tests pass
+
+To build:
+
+```bash
+bash play/web/build.sh        
+node play/web/smoke-test.cjs    
+```
+
+```js
+const engine = new Worker('https://onafuwadav.github.io/Chess_bot/engine-worker.js');
+engine.onmessage = (e) => console.log(e.data.bestmove);
+engine.postMessage({ id: 1, fen: '', moves: 'e2e4', timeMs: 1000 });
+```
+
 ### In a chess GUI
 `chess_uci.exe` works in any UCI GUI.
 
@@ -275,24 +291,6 @@ ESP32-CAM ──Wi-Fi photo──> PC ──USB serial──> display board (LCD
 
 Later steps: run Chess_bot on the ESP32 itself so the PC only does vision (the engine core was
 written for this: no `iostream`, fixed-size boards and tables) and eventually a gantry to move the pieces.
-
-## Project layout
-```
-engine/                     the engine: board, move generation, evaluation, search, perft
-play/cli/                   terminal game (chess_cli)
-play/uci/                   UCI front-end for GUIs and matches (chess_uci)
-play/gui-theme/             ChessX theme: install_chessx_theme.bat, make_chessx_theme.ps1
-play/gui-theme/themes/      the theme converted for ChessX
-play/gui-theme/chess-pack/  Joszs's original images (CC BY 4.0)
-testing/perft/              perft tests
-testing/rules/              draw rule tests
-testing/search/             search and evaluation tests
-testing/bench/              engine_bench (search speed)
-testing/match/              Stockfish matches (match.ps1) and results summary (summary.ps1)
-scripts/                    package.ps1: builds the release zip
-.github/workflows/          GitHub Actions: build, test, and release on version tags
-CMakeLists.txt              build for everything above
-```
 
 ## Credits
 - Chess art: [Chess Pieces and Board Pack](https://joszs.itch.io/chess-pack) by Joszs,

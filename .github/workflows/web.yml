@@ -1,0 +1,60 @@
+# Rebuilds and publishes browser version of engine whenever there are changes to the engine 
+# Nothing is published unless native tests and WebAssembly tests pass
+
+name: Web build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "engine/**"
+      - "play/web/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/web.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# If two pushes arrive close together only newest is published
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Native build and tests (perft, search, eval, draw rules)
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target engine_tests -j
+          ./build/engine_tests
+
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.74
+
+      - name: Build the WebAssembly bundle
+        run: bash play/web/build.sh dist-web
+
+      - name: Smoke test the bundle
+        run: node play/web/smoke-test.cjs dist-web
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist-web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
