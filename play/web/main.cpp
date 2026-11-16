@@ -91,6 +91,7 @@ EMSCRIPTEN_KEEPALIVE const char* chess_legalmoves() {
 }
 
 // "white" or "black" to move, then the state: "none", "check", "checkmate", "stalemate", "draw"
+EMSCRIPTEN_KEEPALIVE const char* chess_status() {
     reply = board.turn == ChessBoard::Turn::white ? "white " : "black ";
     switch (board.StatusCheck()) {
     case ChessBoard::CheckStatus::None: reply += "none"; break;
