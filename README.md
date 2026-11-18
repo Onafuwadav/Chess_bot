@@ -4,7 +4,7 @@
   <h1>Chess_bot</h1>
 
   <p>
-    A chess engine written from scratch in C++, rated about 1681 Elo against Stockfish
+    A chess engine written from scratch in C++, rated about 1681 Elo against strength-limited Stockfish
   </p>
 
 <p>
@@ -191,7 +191,7 @@ cmake --build build
 | `build/chess_cli.exe` | Play in the terminal |
 | `build/chess_uci.exe` | UCI engine for chess GUIs and matches |
 | `build/engine_tests.exe` | Perft, rules, evaluation and search tests |
-| `build/engine_bench.exe "[slow]"` | Deep perft counts |
+| `build/engine_tests "[slow]"` | Deep perft counts |
 | `build/engine_bench.exe [depth]` | Search speed on four positions at set depth |
 
 
@@ -232,7 +232,7 @@ No build needed on Windows:
 ### In the terminal
 Run `chess_cli.exe`. It draws the board in text. Moves are
 typed as four digits `xyxy` (from square -> to square in board's coordinates shown around
-the board), with an optional promotion letter, e.g. `2728n`. `-h` shows help.
+the board), with an optional promotion letter, e.g. `2728n`. `h` shows help.
 
 ### Testing strength against Stockfish
 [testing/match/match.ps1](testing/match/match.ps1) plays Chess_bot against Stockfish using cutechess-cli from a set of 16 openings with colours swapped estimating a rating.
@@ -259,7 +259,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 |---|---|---|
 | `-Name` | `Chess_bot` | Engine name to show in `results/` change per version |
 | `-Elo` | `1320, 1500, 1700` | Stockfish levels to play against (1320–3190) |
-| `-Games` | `20` | Total number of game to simulate |
+| `-Games` | `20` | Total number of games to simulate per Stockfish level |
 | `-TimeControl` | `10+0.1` | Clock per side, e.g. `120+1` or `40/60` |
 | `-Concurrency` | `2` | Number of games to run at once, keep at maximum of half CPU cores |
 | `-CuteChess` | `%LOCALAPPDATA%\Programs\Cute Chess\cutechess-cli.exe` | Path to `cutechess-cli.exe` |
@@ -335,5 +335,5 @@ David Onafuwa: [LinkedIn](https://www.linkedin.com/in/david-onafuwa) · [Donafuw
 [wasm-url]: https://webassembly.org/
 [js-badge]: https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black
 [js-url]: https://developer.mozilla.org/en-US/docs/Web/JavaScript
-[html-badge]: https://img.shields.io/badge/-HTML-E34F26?style=for-the-badge&logo=webassembly&logoColor=white
+[html-badge]: https://img.shields.io/badge/-HTML-E34F26?style=for-the-badge&logo=html5&logoColor=white
 [html-url]: https://developer.mozilla.org/en-US/docs/Web/HTML
