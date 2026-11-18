@@ -66,7 +66,7 @@ The long term goal to play on a physical board with a camera reading the human's
 
 ### Tech Stack
 
-[![C++][cpp-badge]][cpp-url] [![CMake][cmake-badge]][cmake-url] [![Catch2][catch2-badge]][catch2-url] [![GitHub Actions][actions-badge]][actions-url] [![Emscripten][emscripten-badge]][emscripten-url] [![WebAssembly][wasm-badge]][wasm-url] [![JavaScript][js-badge]][js-url] [![HTML][html-badge]][html-url]
+[![C++][cpp-badge]][cpp-url] [![JavaScript][js-badge]][js-url] [![HTML][html-badge]][html-url] [![GitHub Actions][actions-badge]][actions-url] [![CMake][cmake-badge]][cmake-url] [![Catch2][catch2-badge]][catch2-url] [![Emscripten][emscripten-badge]][emscripten-url] [![WebAssembly][wasm-badge]][wasm-url] 
 
 ### Features
 
