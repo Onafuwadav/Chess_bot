@@ -4,6 +4,7 @@
 #   engine-worker.js                the worker the page talks to
 #   index.html                      a small page to try it
 #   version.json                    which commit it was built from
+#   pieces/                         Joszs board and piece imgs
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 out="${1:-dist-web}"
@@ -17,6 +18,8 @@ em++ -std=c++17 -O2 -Wall -Wextra -Iengine \
   -sEXPORTED_RUNTIME_METHODS=cwrap -sALLOW_MEMORY_GROWTH=1 -sSTACK_SIZE=1048576
 
 cp play/web/engine-worker.js play/web/index.html "$out/"
+mkdir -p "$out/pieces"
+cp play/gui-theme/chess-pack/*.png play/gui-theme/CREDITS.md "$out/pieces/"
 commit="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 printf '{"commit":"%s","built":"%s"}\n' "$commit" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$out/version.json"
 echo "Built $out (commit $commit)"
