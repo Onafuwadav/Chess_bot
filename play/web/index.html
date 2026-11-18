@@ -23,12 +23,13 @@
   .tabs button[aria-selected="true"] { background: var(--accent); color: #1d1a20; border-color: var(--accent); font-weight: 600; }
   .layout { display: grid; grid-template-columns: minmax(0, 480px) minmax(0, 1fr); gap: 16px; align-items: start; }
   @media (max-width: 800px) { .layout { grid-template-columns: minmax(0, 1fr); } }
-  #board { display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); width: 100%; aspect-ratio: 1; border: 3px solid var(--ink); }
-  #board button { border: 0; border-radius: 0; padding: 0; font-size: min(44px, 9vw); line-height: 1; color: #111; }
-  #board .l { background: #e8d2ac; } #board .d { background: #a9794f; }
+  #board { position: relative; overflow: hidden; display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); width: 100%; aspect-ratio: 1; border: 3px solid #52381a; background: #a37754; }
+  #board::before { content: ""; position: absolute; left: -0.79%; top: -0.94%; width: 101.64%; height: 101.89%; background: url("pieces/board.png") 0 0 / 100% 100% no-repeat; }
+  #board button { position: relative; border: 0; border-radius: 0; padding: 0; background: transparent; font-size: min(44px, 9vw); line-height: 1; color: #111; display: grid; place-items: center; }
+  #board img { width: 100%; height: 100%; transform: scale(1.12); pointer-events: none; }
   #board .sel { outline: 4px solid var(--accent); outline-offset: -4px; }
   #board .to { box-shadow: inset 0 0 0 5px #4f9d69; }
-  #board .last { background-image: linear-gradient(#ffd98066, #ffd98066); }
+  #board .last { background: #ffd98066; }
   #status { min-height: 1.4em; font-weight: 600; }
   .side { display: grid; gap: 12px; min-width: 0; }
   .box { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px; display: grid; gap: 8px; min-width: 0; }
@@ -89,7 +90,7 @@
         </div>
         <div class="box">
           <h2>Perft</h2>
-          <p class="dim">Counts every position reachable in x number of moves from current board position and compare with published count</p>
+          <p class="dim">Counts every position reachable in x number of moves from current board position and compares to published count</p>
           <div class="row">
             <select id="depth" aria-label="Depth"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select>
             <button id="run-perft" type="button">Run perft count</button>
@@ -99,6 +100,7 @@
       </div>
     </div>
   </div>
+  <p><small> Board and piece art: <a href="https://joszs.itch.io/chess-pack" style="color: inherit">Chess Pieces and Board Pack</a> by Joszs, <a href="https://creativecommons.org/licenses/by/4.0/" style="color: inherit">CC BY 4.0</span><br></a> </small></p> 
 </main>
 <script>
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -116,6 +118,7 @@ const PRESETS = [
   { name: 'Stalemate', fen: '7k/5Q2/6K1/8/8/8/8/8 b - - 0 1', note: 'Black has no legal move and is not in check' },
   { name: 'Insufficient material', fen: '8/8/4k3/8/8/3K4/8/8 w - - 0 1', note: 'King vs king should report a draw' }
 ];
+const IMG = { k: 'king', q: 'queen', r: 'rook', b: 'bishop', n: 'knight', p: 'pawn' };
 const GLYPH = { K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙', k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' };
 const $ = (id) => document.getElementById(id);
 const boardEl = $('board'), statusEl = $('status');
@@ -151,7 +154,12 @@ function draw() {
     const b = document.createElement('button'), sq = name(i);
     b.type = 'button'; b.className = ((i + Math.floor(i / 8)) % 2 ? 'd' : 'l') + (selected === sq ? ' sel' : '') + (last && last.includes(i) ? ' last' : '')
       + (selected && legal.some((m) => m.startsWith(selected + sq)) ? ' to' : '');
-    b.textContent = GLYPH[piece] || ''; b.setAttribute('aria-label', sq + (piece ? ' ' + piece : ''));
+    if (piece) {
+      const img = new Image(); img.alt = ''; img.src = 'pieces/chess-' + IMG[piece.toLowerCase()] + '-' + (piece === piece.toUpperCase() ? 'white' : 'black') + '.png';
+      img.onerror = () => { b.textContent = GLYPH[piece]; };
+      b.appendChild(img);
+    }
+    b.setAttribute('aria-label', sq + (piece ? ' ' + piece : ''));
     b.addEventListener('click', () => click(sq));
     boardEl.appendChild(b);
   });
