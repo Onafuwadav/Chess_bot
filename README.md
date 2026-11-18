@@ -1,138 +1,90 @@
-# Chess_bot
+<div align="center">
 
-[![Build](https://github.com/Onafuwadav/Chess_bot/actions/workflows/build.yml/badge.svg)](https://github.com/Onafuwadav/Chess_bot/actions/workflows/build.yml)
+  <img src="play/gui-theme/chess-pack/chess-knight-white.png" alt="" width="120" height="auto" />
+  <h1>Chess_bot</h1>
 
-## Quick start: play against it (Windows, nothing to build)
+  <p>
+    A chess engine written from scratch in C++, rated about 1681 Elo against Stockfish
+  </p>
 
-1. Download **[Chess_bot-windows.zip](https://github.com/Onafuwadav/Chess_bot/releases/latest/download/Chess_bot-windows.zip)**
-   from the latest release and unzip it.
-2. Install [ChessX](https://chessx.sourceforge.io/), then in Edit > Preferences > Engines add a UCI
-   engine whose command is `chess_uci.exe` from the unzipped folder, and start a game against it.
-3. Optional hand-drawn pieces and board: double-click `chessx-theme\install_chessx_theme.bat`,
-   restart ChessX, and choose **chess-pack** for pieces and board in Edit > Preferences > Board.
+<p>
+  <a href="https://github.com/Onafuwadav/Chess_bot/actions/workflows/build.yml">
+    <img src="https://github.com/Onafuwadav/Chess_bot/actions/workflows/build.yml/badge.svg" alt="Build" />
+  </a>
+  <a href="https://github.com/Onafuwadav/Chess_bot/actions/workflows/web.yml">
+    <img src="https://github.com/Onafuwadav/Chess_bot/actions/workflows/web.yml/badge.svg" alt="Web build" />
+  </a>
+</p>
 
-Or double-click `chess_cli.exe` to play in the terminal. `chess_uci.exe` also works in any other
-UCI GUI (Cute Chess, Arena, En Croissant). `HOW_TO_PLAY.txt` in the zip has the details.
+<h4>
+    <a href="https://onafuwadav.github.io/Chess_bot/">Play in the browser</a>
+  <span> · </span>
+    <a href="https://github.com/Onafuwadav/Chess_bot/releases/latest/download/Chess_bot-windows.zip">Download for Windows</a>
+</h4>
+</div>
 
-## About
-A chess engine written from scratch in C++. It searches with minimax and alpha-beta pruning,
-orders moves so the pruning works well, and evaluates positions with material plus piece-square
-tables. You can play it in a chess GUI such as ChessX or Cute Chess, and run
-matches against Stockfish to measure its strength.
+<br />
 
-The long-term goal is a physical board: a camera reads the human's move and the engine replies.
-That part is **not built yet** (see [Future work](#future-work-the-physical-board)).
+<details>
+  <summary><b>Table of Contents</b></summary>
 
-## What it does
+- [About the Project](#about-the-project)
+  * [Screenshots](#screenshots)
+  * [Tech Stack](#tech-stack)
+  * [Features](#features)
+  * [Results](#results)
+  * [How Elo estimate is calculated](#how-elo-estimate-is-calculated)
+- [Getting Started](#getting-started)
+  * [Prerequisites](#prerequisites)
+  * [Installation](#installation)
+  * [Run Locally](#run-locally)
+  * [Deployment](#deployment)
+
+- [Usage](#usage)
+  * [In the browser](#in-the-browser)
+  * [In a chess GUI](#in-a-chess-gui)
+  * [In the terminal](#in-the-terminal)
+  * [Testing strength against Stockfish](#testing-strength-against-stockfish)
+- [Roadmap](#roadmap)
+- [Contact](#contact)
+- [Acknowledgements](#acknowledgements)
+
+</details>
+
+## About the Project
+
+A chess engine written from scratch in C++ with minimax search optimised with alpha-beta pruning, move ordering, quiescence search, iterative deepening and evaluation based on piece square tables. You can play it in the browser, in a chess GUI such as ChessX or Cute Chess, or in the
+terminal, and run matches against Stockfish to measure its strength.
+
+The long term goal to play on a physical board with a camera reading the human's move with engine replies to display.
+
+### Screenshots
+
+<div align="center">
+  <img src="docs/browserTest.png" alt="Browser test page" width="700" />
+</div>
+
+### Tech Stack
+
+[![C++][cpp-badge]][cpp-url] [![CMake][cmake-badge]][cmake-url] [![Catch2][catch2-badge]][catch2-url] [![GitHub Actions][actions-badge]][actions-url] [![Emscripten][emscripten-badge]][emscripten-url] [![WebAssembly][wasm-badge]][wasm-url] [![JavaScript][js-badge]][js-url] [![HTML][html-badge]][html-url]
+
+### Features
+
 - **All the rules:** legal move generation including castling, en passant and promotion to any
   piece; check, checkmate and stalemate; draws by the 50-move rule, threefold repetition and
   insufficient material.
 - **Verified move generation:** perft counts match the published numbers for six standard test
-  positions (below).
+  positions ([Results](#results)).
 - **Search:** minimax with alpha-beta pruning, MVV-LVA move ordering, quiescence search,
   iterative deepening with a time limit, and mate scores that prefer the quickest mate.
-- **Evaluation:** material in centipawns plus piece-square tables, with the king's table blended
-  between middlegame and endgame by game phase.
-- **Ways to play:** a terminal game, and a UCI engine for chess GUIs (with a ChessX theme made from
-  a hand-drawn piece set).
+- **Evaluation:** material in piece-square tables, with the king's table blended between middlegame and endgame by game phase.
+- **Ways to play:** in the [browser](https://onafuwadav.github.io/Chess_bot/) as a UCI engine for chess GUIs or in the terminal.
 
-## How it works
-### Board and move generation (`engine/board.*`, `engine/movegen.*`)
-Each colour's pieces are kept in a 64-square array (`SquareMap`), with one bit per square saying
-whether it is occupied. Squares are `Pos(x, y)`: `y` is the rank and `x = 1` is the h-file
-(the board was first drawn from Black's side). Copying a board is a plain ~1 KB copy with no
-memory allocation, so the search simply copies the board for each move it tries.
 
-`possibleMoves` generates the moves of one piece, then removes any that would leave its own king
-in check: it plays each move on a copy and asks `isSquareAttacked`, which looks outward from the
-king square for pawns, knights, the enemy king and sliding pieces.
+### Results
 
-Repetitions are found with a 64-bit **Zobrist hash** of each position: the XOR of one random
-number per (piece, colour, square), plus side to move, castling rights and en passant file. The
-random numbers come from a mixing function (splitmix64) instead of a stored table, which saves
-6 KB of memory for a future microcontroller build.
-
-### Search (`engine/search.*`)
-**Minimax** looks ahead `d` moves: White picks the move with the highest score, Black the lowest.
-With about 35 legal moves per position, that is roughly 35^d positions.
-
-**Alpha-beta pruning** gives the same answer with far fewer positions. `alpha` is the score White
-is already guaranteed and `beta` the score Black is already guaranteed; once `alpha >= beta`, the
-side choosing earlier would never allow this line, so the remaining moves are skipped. With
-perfect move ordering this searches about 35^(d/2) positions instead of 35^d, roughly twice the
-depth in the same time.
-
-**Move ordering** is what makes that possible. Captures are tried first, ranked by MVV-LVA
-(most valuable victim, least valuable attacker): `10 x victim - attacker`, so pawn-takes-queen
-comes before queen-takes-pawn. Promotions come next, and at the root the best move from the
-previous iteration goes first.
-
-**Quiescence search** fixes the horizon effect. Instead of scoring a position the moment the
-depth runs out (which would think Qxd5 won a pawn even if exd5 recaptures next move), the search
-keeps playing captures until the position is quiet. The side to move may also "stand pat" and
-take the static score, since it is never forced to capture.
-
-**Iterative deepening** searches depth 1, then 2, 3, ... until the time runs out, and plays the
-deepest finished result. The repeats are cheap (each depth costs about 1/35 of the next) and each
-one tells the next which move to try first. Checkmate scores `1,000,000 - ply`, so a faster mate
-scores higher.
-
-### Evaluation (`engine/eval.*`)
-`score = sum over white pieces (value + table[square]) - same for black`, in centipawns:
-pawn 100, knight 320, bishop 330, rook 500, queen 900. The piece-square tables used come from Tomasz
-Michniewski's *Simplified Evaluation Function*: knights prefer the centre, pawns gain value as
-they advance, rooks like the 7th rank. The king uses two tables blended by game phase:
-
-`phase = knights + bishops + 2 x rooks + 4 x queens` (24 at the start), and
-`king bonus = (middlegame x phase + endgame x (24 - phase)) / 24`,
-
-so the king shelters while the queens are on and walks to the centre in the endgame. Each table
-is 64 bytes.
-
-## Build
-Needs CMake 3.16+ and a C++17 compiler. On Windows with MSYS2 (UCRT64 shell):
-
-```bash
-pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
-cmake -S . -B build -G Ninja
-cmake --build build
-```
-
-The MinGW runtime is linked statically, so the `.exe` files run outside the MSYS2 shell.
-Catch2 is downloaded automatically the first time CMake configures the tests.
-
-| Program | What it is |
-|---|---|
-| `build/chess_cli.exe` | Play in the terminal |
-| `build/chess_uci.exe` | UCI engine for chess GUIs and matches |
-| `build/engine_tests.exe` | Perft, rules, evaluation and search tests |
-| `build/engine_bench.exe [depth]` | Search speed on four positions |
-
-## 1. Engine testing (no board)
-### Tests
-```bash
-./build/engine_tests.exe            # about 1 s
-./build/engine_tests.exe "[slow]"   # deep perft counts, about 11 s
-```
-
-### Perft
-Perft counts every position reachable in exactly N moves. If any rule is wrong, the count is
-wrong, so matching the published counts
-([chessprogramming.org](https://www.chessprogramming.org/Perft_Results)) is strong evidence the
-move generator is correct. All of these match:
-
-| Position | Depth | Positions |
-|---|---|---|
-| Start position | 5 | 4,865,609 |
-| Kiwipete (castling, en passant, pins) | 4 | 4,085,603 |
-| Position 3 (en passant pins, endgame) | 5 | 674,624 |
-| Position 4 (promotions, checks) | 4 | 422,333 |
-| Position 5 | 4 | 2,103,487 |
-| Position 6 | 4 | 3,894,594 |
-
-### Speed
-`engine_bench 4` searches four positions (start, Kiwipete, a middle game, a rook endgame) to
-depth 4. How each change affected it:
+#### Speed
+Searching four preset positions to depth 4:
 
 | Version | Positions searched | Time |
 |---|---|---|
@@ -143,76 +95,7 @@ depth 4. How each change affected it:
 | + quiescence search | 146,585 | 2.2 s |
 | + array board (replacing `std::map`) | 146,585 | 0.61 s |
 
-Quiescence searches more positions because it plays out captures past the depth limit; that is
-the cost of not blundering pieces at the horizon. The tables made pruning slightly less
-effective at first because fewer moves tie, which move ordering then more than recovered.
-
-Currently about **250,000 positions per second** on one core; depth 5 takes about 2.6 s for all
-four positions. With 2 seconds per move it usually completes depth 5 in the middlegame.
-
-### Strength against Stockfish
-[testing/match/match.ps1](testing/match/match.ps1) plays Chess_bot against Stockfish limited to a
-given rating (`UCI_LimitStrength`, `UCI_Elo`) using cutechess-cli, from a 16-opening book with
-colours swapped, and estimates a rating and [testing/match/summary.ps1](testing/match/summary.ps1) reads every .pgn file in [testing/match/results/](testing/match/results/) and prints WLD against different Engines at different Time control's in easy to read format. 
-
-#### `match.ps1` parameters
-| Parameter | Default | What it does |
-|---|---|---|
-| `-Name` | `Chess_bot` | Name your engine is saved under in the results. Change it for each version so `summary.ps1` keeps results apart. |
-| `-Elo` | `1320, 1500, 1700` | List of Stockfish `UCI_Elo` levels to play against, one match per level (Stockfish's range is 1320–3190). |
-| `-Games` | `20` | Games per level. Each opening is played twice with colours swapped, so use an even number. More games give a smaller ± range. |
-| `-TimeControl` | `10+0.1` | Clock for each side in seconds, `base+increment` (e.g. `120+1`), or `moves/seconds` (e.g. `40/60`). Use `120+1` for rating estimates. |
-| `-Concurrency` | `2` | How many games run at the same time. Keep at ≈ half your CPU cores or engines get less thinking time. |
-| `-CuteChess` | `%LOCALAPPDATA%\Programs\Cute Chess\cutechess-cli.exe` | Path to `cutechess-cli.exe`, if Cute Chess is installed elsewhere. |
-| `-Stockfish` | first `stockfish*.exe` in `stockfish\` | Path to the Stockfish `.exe` to play against. |
-| `-Engine` | `build\chess_uci.exe` | Path to your engine's `.exe`. Point at saved copy to re-test an older version. |
-
-
-#### `summary.ps1` parameters
-| Parameter | Default | What it does |
-|---|---|---|
-| `-TimeControl` | all | Only count games at this time control, e.g. `120+1`. |
-| `-Engine` | all | Only show this engine's results, e.g. `Chess_bot_v2` (name given with `match.ps1 -Name`). |
-| `-ResultsDir` | `testing\match\results` | Folder of `.pgn` files to read. |
-
-Example
-```powershell
-.\testing\match\match.ps1 -Name **Engine name** -Elo 1400,1500,1600,1700 -Games 50 -TimeControl "120+1"
-
-.\testing\match\summary.ps1 -TimeControl "120+1"
-```
-If PowerShell says running scripts is disabled, run
-`Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` in that window first.
-
-#### How the numbers are calculated
-All of these come from the standard Elo model: a player rated `D` points above their opponent is
-expected to score `E = 1 / (1 + 10^(-D / 400))`, so +200 Elo expects about 76%, and 0 expects 50%.
-
-- **Score:** points per game, where a win is 1, a draw is ½ and a loss is 0.
-  e.g. 36 wins, 13 losses and 1 draw is 36.5 / 50 = 73%.
-- **Elo diff:** the formula above turned around to find `D` from the score:
-  `D = -400 x log10(1 / score - 1)`. A 73% score gives +173.
-- **± range:** the 95% error margin. The results of the individual games (1, ½ or 0) vary around the
-  average score; dividing that spread by √games gives the uncertainty in the score, and
-  score ± 1.96 x uncertainty is converted to Elo with the same formula. More games give a smaller
-  range. Lopsided results give a wide one, because near 0% or 100% a small change in score is a big
-  change in Elo (and exactly 0% or 100% has no finite Elo at all).
-- **Estimate:** the opponent's rating + Elo diff, e.g. 1500 + 173 = 1673.
-- **Overall estimate:** one rating that fits the results against every level at once. More reliable than any single row because every game counts towards it.
-
-#### Why 120+1, and how far to trust the result
-Stockfish's documentation says its `UCI_Elo` setting "has been calibrated at a time control of
-120s+1s and anchored to CCRL 40/4", so 120s per side plus 1s per move is where its labels are most
-accurate.
-
-Elo is relative: it only says how a player scores against the pool it was measured in. This one is
-measured on the CCRL computer rating list's scale, so it is not a FIDE or chess.com rating. A
-weakened Stockfish is also not a real 1500 player: it plays strong moves and then deliberately
-picks worse ones at random, so it blunders differently from a human or a weak engine. That makes
-this a useful, repeatable yardstick for comparing versions of Chess_bot, but an approximate absolute
-rating.
-
-#### Results: Chess_bot at 120+1 (200 games)
+#### Strength (Games against Stockfish)
 | Stockfish UCI_Elo | Games | W-L-D | Score | As White | As Black | Elo diff | Estimate |
 |---|---|---|---|---|---|---|---|
 | 1400 | 50 | 46-4-0 | 92% | 96% | 88% | +424 ± 316 | 1824 |
@@ -220,17 +103,44 @@ rating.
 | 1600 | 50 | 24-24-2 | 50% | 56% | 44% | +0 ± 97 | 1600 |
 | 1700 | 50 | 25-24-1 | 51% | 54% | 48% | +7 ± 98 | 1707 |
 
-**Overall estimate: about 1681** (over 200 games).
+**Overall estimate: 1681** over 200 games
 
-#### How the overall estimate is calculated
-The rows above disagree (1824, 1673, 1600, 1707) because each has its own error. The overall
-estimate finds the single rating `R` that would be expected to score exactly the points Chess_bot
-actually scored against all of them:
+### How Elo estimate is calculated
+
+<details>
+  <summary>Formulas</b></summary>
+
+All of these come from the standard Elo model; player rated `D` points above their opponent is
+expected to score:
+
+`E = 1 / (1 + 10^(-D / 400))`
+
+so +200 Elo expects about 76%, and 0 expects 50%.
+
+- **Score:** points per game - win = 1, draw = ½, loss = 0.
+  e.g. 36 wins, 13 losses and 1 draw is 36.5 / 50 = 73%.
+- **Elo diff:** Formula above used to find `D` from score:
+
+  `D = -400 x log10(1 / score - 1)`
+  
+   A 73% score gives +173.
+- **± range:** 95% error margin
+- **Estimate:** Opponent's rating + Elo diff, e.g. 1500 + 173 = 1673.
+
+
+</details>
+
+<details>
+  <summary>How overall estimate is calculated</b></summary>
+
+The rows in [Results](#results) disagree (1824, 1673, 1600, 1707) because each has its own error.
+The overall estimate finds the single rating `R` that would be expected to score exactly the
+points Chess_bot actually scored against all of them:
 
 `sum over every opponent of  games x 1 / (1 + 10^((opponent - R) / 400))  =  points scored`
 
 The script finds `R` by bisection (try a rating, check whether the expected points are too high or
-too low, halve the range, repeat). With the real results, `R = 1681`:
+too low, halve the range and repeat):
 
 | Opponent | Games | Expected score at 1681 | Expected points | Actual points |
 |---|---|---|---|---|
@@ -241,19 +151,68 @@ too low, halve the range, repeat). With the real results, `R = 1681`:
 | **Total** | **200** | | **133.0** | **133** |
 
 
-Needs [Cute Chess](https://github.com/cutechess/cutechess) (for cutechess-cli) and a
-[Stockfish](https://stockfishchess.org/download/) `.exe` unzipped into `stockfish/` (not committed).
+</details>
 
-## 2. Human vs AI
-### In browser
-Engine is compiled to WebAssembly with [Emscripten](https://emscripten.org/) and published with GitHub Pages at https://onafuwadav.github.io/Chess_bot/. Every push to `main` changing the engine rebuilds and publishes if tests pass
 
-To build:
+<details>
+  <summary>Why 120+1 used and how much to trust the estimate</b></summary>
 
+Stockfish's `UCI_Elo` setting is calibrated at a time control of
+120s+1s, so that's where its labels are most accurate
+
+Elo is relative so it only says how a player scores against the pool it was measured in. A weakened Stockfish is also not a real 1500 player since it plays strong moves and then deliberately picks worse ones, so it blunders differently from a human or a weak engine. That makes this a useful, repeatable yardstick for comparing versions of Chess_bot, but an approximate absolute rating nonetheless.
+
+</details>
+
+## Getting Started
+
+### Prerequisites
+- CMake 3.16+ and a C++17 compiler. On Windows, MSYS2 (UCRT64 shell) with GCC, CMake and Ninja:
+
+  ```bash
+  pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
+  ```
+
+- For Stockfish matches only: [Cute Chess](https://github.com/cutechess/cutechess) (for
+  cutechess-cli) and a [Stockfish](https://stockfishchess.org/download/) `.exe` unzipped into
+  `stockfish/`
+
+### Installation
 ```bash
-bash play/web/build.sh        
-node play/web/smoke-test.cjs    
+git clone https://github.com/Onafuwadav/Chess_bot.git
+cd Chess_bot
+cmake -S . -B build -G Ninja
+cmake --build build
 ```
+
+### Run Locally
+| Program | What it is |
+|---|---|
+| `build/chess_cli.exe` | Play in the terminal |
+| `build/chess_uci.exe` | UCI engine for chess GUIs and matches |
+| `build/engine_tests.exe` | Perft, rules, evaluation and search tests |
+| `build/engine_bench.exe "[slow]"` | Deep perft counts |
+| `build/engine_bench.exe [depth]` | Search speed on four positions at set depth |
+
+
+### Deployment
+Done by GitHub Actions:
+
+- **Browser version:** every push to `main` that changing the `engine/` rebuilds the WebAssembly
+  build and publishes it with [GitHub Pages](https://onafuwadav.github.io/Chess_bot/) only
+  if the native and WebAssembly smoke test pass.
+- **Windows release:** every push is built and tested, and pushing a version tag publishes as a GitHub Release
+
+
+## Usage
+
+### In the browser
+Open https://onafuwadav.github.io/Chess_bot/
+
+- **Play:** You play White
+- **Testing:** Start at a preset position or paste own FEN, run perft against the published counts.
+
+Another page can use this engine through `engine-worker.js`:
 
 ```js
 const engine = new Worker('https://onafuwadav.github.io/Chess_bot/engine-worker.js');
@@ -262,41 +221,119 @@ engine.postMessage({ id: 1, fen: '', moves: 'e2e4', timeMs: 1000 });
 ```
 
 ### In a chess GUI
-`chess_uci.exe` works in any UCI GUI.
+No build needed on Windows:
 
-The repo includes a hand drawn chess board and piece theme made by Joszs
-[Chess Pieces and Board Pack](https://joszs.itch.io/chess-pack) (CC BY 4.0).
+1. Download **[latest release](https://github.com/Onafuwadav/Chess_bot/releases/latest/download/Chess_bot-windows.zip)** and unzip it.
+2. Install [ChessX](https://chessx.sourceforge.io/), or any other UCI GUI like Cute Chess then add `chess_uci.exe` from the unzipped folder and start a game against it.
+3. For optional hand drawn pieces and board run `chessx-theme\install_chessx_theme.bat` then restart GUI and choose **chess-pack** for pieces and board.
+
+`HOW_TO_PLAY.txt` in the zip has more details.
 
 ### In the terminal
-`chess_cli.exe` draws the board in text and plays at 2 seconds per move. Moves are typed as four
-digits `xyxy` (from-square then to-square, in the board's own coordinates shown around the
-board), with an optional promotion letter, e.g. `2728n`. `h` shows help.
+Run `chess_cli.exe`. It draws the board in text. Moves are
+typed as four digits `xyxy` (from square -> to square in board's coordinates shown around
+the board), with an optional promotion letter, e.g. `2728n`. `-h` shows help.
 
-## 3. Future work: the physical board
-Planned: play on a real board, with a camera reading your moves and Chess_bot replying on a small display.
+### Testing strength against Stockfish
+[testing/match/match.ps1](testing/match/match.ps1) plays Chess_bot against Stockfish using cutechess-cli from a set of 16 openings with colours swapped estimating a rating.
+
+[testing/match/summary.ps1](testing/match/summary.ps1) reads every file in
+[testing/match/results/](testing/match/results/) and prints wins, losses and draws against each
+engine at each time control.
+
+```powershell
+.\testing\match\match.ps1 -Name Chess_bot_v2 -Elo 1400,1500,1600,1700 -Games 50 -TimeControl "120+1"
+.\testing\match\summary.ps1 -TimeControl "120+1"
+```
+
+May need to Bypass Execution Policy to run script if says running scripts is disabled:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+<details>
+  <summary><b><code>match.ps1</code> and <code>summary.ps1</code> parameters</b></summary>
+
+#### `match.ps1`
+| Parameter | Default | What it does |
+|---|---|---|
+| `-Name` | `Chess_bot` | Engine name to show in `results/` change per version |
+| `-Elo` | `1320, 1500, 1700` | Stockfish levels to play against (1320–3190) |
+| `-Games` | `20` | Total number of game to simulate |
+| `-TimeControl` | `10+0.1` | Clock per side, e.g. `120+1` or `40/60` |
+| `-Concurrency` | `2` | Number of games to run at once, keep at maximum of half CPU cores |
+| `-CuteChess` | `%LOCALAPPDATA%\Programs\Cute Chess\cutechess-cli.exe` | Path to `cutechess-cli.exe` |
+| `-Stockfish` | first `stockfish*.exe` in `stockfish\` | Path to Stockfish |
+| `-Engine` | `build\chess_uci.exe` | Path to your engine, point at an old copy to retest |
+
+#### `summary.ps1`
+| Parameter | Default | What it does |
+|---|---|---|
+| `-TimeControl` | all | Only count this time control |
+| `-Engine` | all | Only show this engine (its `-Name`) |
+| `-ResultsDir` | `testing\match\results` | Folder of `.pgn` files to read |
+
+</details>
+
+## Roadmap
+
+* [x] Legal move generation, verified with perft
+* [x] Alpha-beta search with move ordering, quiescence and iterative deepening
+* [x] Array board to replace `std::map`
+* [x] UCI engine
+* [x] Rating estimate against Stockfish
+* [x] Browser version
+* [ ] Physical board
+* [ ] Run on the ESP32 
+* [ ] A gantry to move the pieces
+
+<details>
+  <summary><b>How the physical board will work</b></summary>
 
 ```
-ESP32-CAM ──Wi-Fi photo──> PC ──USB serial──> display board (LCD, keypad, servo)
-  above the board           vision + chess_uci.exe        "MOVE e7e5" / "MOVED", "NEW"
+ESP32-CAM --> Wi-Fi photo --> PC --> USB serial --> display board
 ```
 
-- **Camera (ESP32-CAM):** fixed above the board; takes a photo when asked and sends it to the PC.
-- **PC (Python, OpenCV + python-chess):** straightens the photo, splits it into 64 squares and
-  compares before/after to see which squares changed. It doesn't need to recognise pieces: the
-  changed squares plus the list of legal moves give the move. Chess_bot (`chess_uci.exe`) then
-  picks the reply.
+- **Camera (ESP32-CAM):** fixed above the board; takes a photo when asked and sends to PC
+- **PC (Python, OpenCV + python-chess):** straightens photo, splits into 64 squares and
+  compares before/after to see which squares changed. It doesn't need to recognise the pieces just which
+  squares changed and the legal move required for that change will give the move. The Chess bot (`chess_uci.exe`) will then
+  pick the reply
 - **Display board (Arduino Nano or ESP32, over USB):** a 16x2 LCD shows the engine's move and
   status; a keypad will give `#` "I've moved", `*` new game, `0` retake photo and `1`-`4` the
   promotion piece; a servo flag shows whose turn it is.
 
-Later steps: run Chess_bot on the ESP32 itself so the PC only does vision (the engine core was
-written for this: no `iostream`, fixed-size boards and tables) and eventually a gantry to move the pieces.
+The engine core was written with the ESP32 step in mind so no `iostream` and fixed size boards or tables
 
-## Credits
-- Chess art: [Chess Pieces and Board Pack](https://joszs.itch.io/chess-pack) by Joszs,
+</details>
+
+## Contact
+
+David Onafuwa: [LinkedIn](https://www.linkedin.com/in/david-onafuwa) · [Donafuwa@outlook.com](mailto:Donafuwa@outlook.com)
+
+## Acknowledgements
+
+- Chess piece and board art and the logo: [Chess Pieces and Board Pack](https://joszs.itch.io/chess-pack) by Joszs,
   CC BY 4.0 (see [play/gui-theme/CREDITS.md](play/gui-theme/CREDITS.md)).
-- Piece-square tables: Tomasz Michniewski, *Simplified Evaluation Function*
+- Piece square tables: Tomasz Michniewski, *Simplified Evaluation Function*
   ([chessprogramming.org](https://www.chessprogramming.org/Simplified_Evaluation_Function)).
-- Perft reference counts: [chessprogramming.org](https://www.chessprogramming.org/Perft_Results).
-- Testing tools: [Catch2](https://github.com/catchorg/Catch2),
-  [Stockfish](https://stockfishchess.org/), [Cute Chess](https://github.com/cutechess/cutechess).
+- Referenced Perft counts: [chessprogramming.org](https://www.chessprogramming.org/Perft_Results).
+
+
+<!-- Tech stack badges -->
+[cpp-badge]: https://img.shields.io/badge/C%2B%2B17-00599C?style=for-the-badge&logo=cplusplus&logoColor=white
+[cpp-url]: https://isocpp.org/
+[cmake-badge]: https://img.shields.io/badge/CMake-064F8C?style=for-the-badge&logo=cmake&logoColor=white
+[cmake-url]: https://cmake.org/
+[catch2-badge]: https://img.shields.io/badge/Catch2-2E3440?style=for-the-badge
+[catch2-url]: https://github.com/catchorg/Catch2
+[actions-badge]: https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white
+[actions-url]: https://github.com/features/actions
+[emscripten-badge]: https://img.shields.io/badge/Emscripten-4B4B4B?style=for-the-badge
+[emscripten-url]: https://emscripten.org/
+[wasm-badge]: https://img.shields.io/badge/WebAssembly-654FF0?style=for-the-badge&logo=webassembly&logoColor=white
+[wasm-url]: https://webassembly.org/
+[js-badge]: https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black
+[js-url]: https://developer.mozilla.org/en-US/docs/Web/JavaScript
+[html-badge]: https://img.shields.io/badge/-HTML-E34F26?style=for-the-badge&logo=webassembly&logoColor=white
+[html-url]: https://developer.mozilla.org/en-US/docs/Web/HTML
