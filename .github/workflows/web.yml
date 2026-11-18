@@ -9,6 +9,7 @@ on:
     paths:
       - "engine/**"
       - "play/web/**"
+      - "play/gui-theme/chess-pack/**"
       - "CMakeLists.txt"
       - ".github/workflows/web.yml"
   workflow_dispatch:
