@@ -4,7 +4,7 @@
   <h1>Chess_bot</h1>
 
   <p>
-    A chess engine written from scratch in C++, rated about 1681 Elo against strength-limited Stockfish
+    A chess engine written from scratch in C++, rated about 1681 Elo against a strength limited Stockfish
   </p>
 
 <p>
@@ -39,11 +39,10 @@
 
 ## About the Project
 
-A chess engine written from scratch in C++ with minimax search optimised with alpha-beta pruning, move ordering, quiescence search, iterative deepening and evaluation based on piece square tables. You can play it in the browser, in a chess GUI such as ChessX or Cute Chess, or in the
-terminal, and run matches against Stockfish to measure its strength.
+A chess engine written from scratch in C++ with minimax search optimised with alpha-beta pruning, move ordering, quiescence search, iterative deepening and evaluation based on piece square tables. You can play it in the browser, as a UCI engine for chess GUIs, or in the terminal. Can also run matches against Stockfish to measure its strength.
 
 <details>
-  <summary>Screenshot</b></summary>
+  <summary>Screenshot</summary>
 <div align="center">
   <img src="docs/browserTest.png" alt="Browser version" width="700" />
 </div>
@@ -88,9 +87,8 @@ cmake --build build
 ### Deployment
 Done by GitHub Actions:
 
-- **Browser version:** every push to `main` that changing the `engine/` rebuilds the WebAssembly
-  build and publishes it with [GitHub Pages](https://onafuwadav.github.io/Chess_bot/) only
-  if the native and WebAssembly smoke test pass.
+- **Browser version:** every push to `main` that changes `engine/` or `play/web` rebuilds the WebAssembly
+  build and publishes it with [GitHub Pages](https://onafuwadav.github.io/Chess_bot/) only if the native tests and WebAssembly smoke test passes.
 - **Windows release:** every push is built and tested, and pushing a version tag publishes as a GitHub Release
 
 
@@ -167,7 +165,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 ## Results
 <details>
-  <summary>Speed</b></summary>
+  <summary>Speed</summary>
 Searching four preset positions to depth 4:
 
 | Version | Positions searched | Time |
@@ -182,7 +180,7 @@ Searching four preset positions to depth 4:
 
 
 <details>
-  <summary>Strength based on Games vs Stockfish</b></summary>
+  <summary>Strength based on Games vs Stockfish</summary>
 | Stockfish UCI_Elo | Games | W-L-D | Score | As White | As Black | Elo diff | Estimate |
 |---|---|---|---|---|---|---|---|
 | 1400 | 50 | 46-4-0 | 92% | 96% | 88% | +424 ± 316 | 1824 |
@@ -196,7 +194,7 @@ Searching four preset positions to depth 4:
 ### How Elo estimate is calculated
 
 <details>
-  <summary>Formulas</b></summary>
+  <summary>Formulas</summary>
 
 All of these come from the standard Elo model; player rated `D` points above their opponent is
 expected to score:
@@ -219,7 +217,7 @@ so +200 Elo expects about 76%, and 0 expects 50%.
 </details>
 
 <details>
-  <summary>How overall estimate is calculated</b></summary>
+  <summary>How overall estimate is calculated</summary>
 
 The rows in [Results](#results) disagree (1824, 1673, 1600, 1707) because each has its own error.
 The overall estimate finds the single rating `R` that would be expected to score exactly the
@@ -243,7 +241,7 @@ too low, halve the range and repeat):
 
 
 <details>
-  <summary>Why 120+1 used and how much to trust the estimate</b></summary>
+  <summary>Why 120+1 used and how much to trust the estimate</summary>
 
 Stockfish's `UCI_Elo` setting is calibrated at a time control of
 120s+1s, so that's where its labels are most accurate
