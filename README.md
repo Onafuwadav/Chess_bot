@@ -29,23 +29,9 @@
   <summary><b>Table of Contents</b></summary>
 
 - [About the Project](#about-the-project)
-  * [Screenshots](#screenshots)
-  * [Tech Stack](#tech-stack)
-  * [Features](#features)
-  * [Results](#results)
-  * [How Elo estimate is calculated](#how-elo-estimate-is-calculated)
 - [Getting Started](#getting-started)
-  * [Prerequisites](#prerequisites)
-  * [Installation](#installation)
-  * [Run Locally](#run-locally)
-  * [Deployment](#deployment)
-
 - [Usage](#usage)
-  * [In the browser](#in-the-browser)
-  * [In a chess GUI](#in-a-chess-gui)
-  * [In the terminal](#in-the-terminal)
-  * [Testing strength against Stockfish](#testing-strength-against-stockfish)
-- [Roadmap](#roadmap)
+- [Results](#results)
 - [Contact](#contact)
 - [Acknowledgements](#acknowledgements)
 
@@ -56,113 +42,17 @@
 A chess engine written from scratch in C++ with minimax search optimised with alpha-beta pruning, move ordering, quiescence search, iterative deepening and evaluation based on piece square tables. You can play it in the browser, in a chess GUI such as ChessX or Cute Chess, or in the
 terminal, and run matches against Stockfish to measure its strength.
 
-The long term goal to play on a physical board with a camera reading the human's move with engine replies to display.
-
-### Screenshots
-
+<details>
+  <summary>Screenshot</b></summary>
 <div align="center">
-  <img src="docs/browserTest.png" alt="Browser test page" width="700" />
+  <img src="docs/browserTest.png" alt="Browser version" width="700" />
 </div>
+</details>
 
 ### Tech Stack
 
 [![C++][cpp-badge]][cpp-url] [![JavaScript][js-badge]][js-url] [![HTML][html-badge]][html-url] [![GitHub Actions][actions-badge]][actions-url] [![CMake][cmake-badge]][cmake-url] [![Catch2][catch2-badge]][catch2-url] [![Emscripten][emscripten-badge]][emscripten-url] [![WebAssembly][wasm-badge]][wasm-url] 
 
-### Features
-
-- **All the rules:** legal move generation including castling, en passant and promotion to any
-  piece; check, checkmate and stalemate; draws by the 50-move rule, threefold repetition and
-  insufficient material.
-- **Verified move generation:** perft counts match the published numbers for six standard test
-  positions ([Results](#results)).
-- **Search:** minimax with alpha-beta pruning, MVV-LVA move ordering, quiescence search,
-  iterative deepening with a time limit, and mate scores that prefer the quickest mate.
-- **Evaluation:** material in piece-square tables, with the king's table blended between middlegame and endgame by game phase.
-- **Ways to play:** in the [browser](https://onafuwadav.github.io/Chess_bot/) as a UCI engine for chess GUIs or in the terminal.
-
-
-### Results
-
-#### Speed
-Searching four preset positions to depth 4:
-
-| Version | Positions searched | Time |
-|---|---|---|
-| Plain minimax | 6,088,286 | 33.8 s |
-| + alpha-beta pruning | 266,203 | 1.1 s |
-| + piece-square tables | 365,470 | 1.5 s |
-| + MVV-LVA move ordering | 47,372 | 0.65 s |
-| + quiescence search | 146,585 | 2.2 s |
-| + array board (replacing `std::map`) | 146,585 | 0.61 s |
-
-#### Strength (Games against Stockfish)
-| Stockfish UCI_Elo | Games | W-L-D | Score | As White | As Black | Elo diff | Estimate |
-|---|---|---|---|---|---|---|---|
-| 1400 | 50 | 46-4-0 | 92% | 96% | 88% | +424 ± 316 | 1824 |
-| 1500 | 50 | 36-13-1 | 73% | 77% | 69% | +173 ± 113 | 1673 |
-| 1600 | 50 | 24-24-2 | 50% | 56% | 44% | +0 ± 97 | 1600 |
-| 1700 | 50 | 25-24-1 | 51% | 54% | 48% | +7 ± 98 | 1707 |
-
-**Overall estimate: 1681** over 200 games
-
-### How Elo estimate is calculated
-
-<details>
-  <summary>Formulas</b></summary>
-
-All of these come from the standard Elo model; player rated `D` points above their opponent is
-expected to score:
-
-`E = 1 / (1 + 10^(-D / 400))`
-
-so +200 Elo expects about 76%, and 0 expects 50%.
-
-- **Score:** points per game - win = 1, draw = ½, loss = 0.
-  e.g. 36 wins, 13 losses and 1 draw is 36.5 / 50 = 73%.
-- **Elo diff:** Formula above used to find `D` from score:
-
-  `D = -400 x log10(1 / score - 1)`
-  
-   A 73% score gives +173.
-- **± range:** 95% error margin
-- **Estimate:** Opponent's rating + Elo diff, e.g. 1500 + 173 = 1673.
-
-
-</details>
-
-<details>
-  <summary>How overall estimate is calculated</b></summary>
-
-The rows in [Results](#results) disagree (1824, 1673, 1600, 1707) because each has its own error.
-The overall estimate finds the single rating `R` that would be expected to score exactly the
-points Chess_bot actually scored against all of them:
-
-`sum over every opponent of  games x 1 / (1 + 10^((opponent - R) / 400))  =  points scored`
-
-The script finds `R` by bisection (try a rating, check whether the expected points are too high or
-too low, halve the range and repeat):
-
-| Opponent | Games | Expected score at 1681 | Expected points | Actual points |
-|---|---|---|---|---|
-| 1400 | 50 | 1 / (1 + 10^(-281/400)) = 0.834 | 41.7 | 46 |
-| 1500 | 50 | 1 / (1 + 10^(-181/400)) = 0.739 | 37.0 | 36.5 |
-| 1600 | 50 | 1 / (1 + 10^(-81/400)) = 0.615 | 30.7 | 25 |
-| 1700 | 50 | 1 / (1 + 10^(19/400)) = 0.473 | 23.6 | 25.5 |
-| **Total** | **200** | | **133.0** | **133** |
-
-
-</details>
-
-
-<details>
-  <summary>Why 120+1 used and how much to trust the estimate</b></summary>
-
-Stockfish's `UCI_Elo` setting is calibrated at a time control of
-120s+1s, so that's where its labels are most accurate
-
-Elo is relative so it only says how a player scores against the pool it was measured in. A weakened Stockfish is also not a real 1500 player since it plays strong moves and then deliberately picks worse ones, so it blunders differently from a human or a weak engine. That makes this a useful, repeatable yardstick for comparing versions of Chess_bot, but an approximate absolute rating nonetheless.
-
-</details>
 
 ## Getting Started
 
@@ -275,35 +165,90 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 </details>
 
-## Roadmap
+## Results
+<details>
+  <summary>Speed</b></summary>
+Searching four preset positions to depth 4:
 
-* [x] Legal move generation, verified with perft
-* [x] Alpha-beta search with move ordering, quiescence and iterative deepening
-* [x] Array board to replace `std::map`
-* [x] UCI engine
-* [x] Rating estimate against Stockfish
-* [x] Browser version
-* [ ] Physical board
-* [ ] Run on the ESP32 
-* [ ] A gantry to move the pieces
+| Version | Positions searched | Time |
+|---|---|---|
+| Plain minimax | 6,088,286 | 33.8 s |
+| + alpha-beta pruning | 266,203 | 1.1 s |
+| + piece-square tables | 365,470 | 1.5 s |
+| + MVV-LVA move ordering | 47,372 | 0.65 s |
+| + quiescence search | 146,585 | 2.2 s |
+| + array board (replacing `std::map`) | 146,585 | 0.61 s |
+</details>
+
 
 <details>
-  <summary><b>How the physical board will work</b></summary>
+  <summary>Strength based on Games vs Stockfish</b></summary>
+| Stockfish UCI_Elo | Games | W-L-D | Score | As White | As Black | Elo diff | Estimate |
+|---|---|---|---|---|---|---|---|
+| 1400 | 50 | 46-4-0 | 92% | 96% | 88% | +424 ± 316 | 1824 |
+| 1500 | 50 | 36-13-1 | 73% | 77% | 69% | +173 ± 113 | 1673 |
+| 1600 | 50 | 24-24-2 | 50% | 56% | 44% | +0 ± 97 | 1600 |
+| 1700 | 50 | 25-24-1 | 51% | 54% | 48% | +7 ± 98 | 1707 |
 
-```
-ESP32-CAM --> Wi-Fi photo --> PC --> USB serial --> display board
-```
+**Overall estimate: 1681** over 200 games
+</details>
 
-- **Camera (ESP32-CAM):** fixed above the board; takes a photo when asked and sends to PC
-- **PC (Python, OpenCV + python-chess):** straightens photo, splits into 64 squares and
-  compares before/after to see which squares changed. It doesn't need to recognise the pieces just which
-  squares changed and the legal move required for that change will give the move. The Chess bot (`chess_uci.exe`) will then
-  pick the reply
-- **Display board (Arduino Nano or ESP32, over USB):** a 16x2 LCD shows the engine's move and
-  status; a keypad will give `#` "I've moved", `*` new game, `0` retake photo and `1`-`4` the
-  promotion piece; a servo flag shows whose turn it is.
+### How Elo estimate is calculated
 
-The engine core was written with the ESP32 step in mind so no `iostream` and fixed size boards or tables
+<details>
+  <summary>Formulas</b></summary>
+
+All of these come from the standard Elo model; player rated `D` points above their opponent is
+expected to score:
+
+`E = 1 / (1 + 10^(-D / 400))`
+
+so +200 Elo expects about 76%, and 0 expects 50%.
+
+- **Score:** points per game - win = 1, draw = ½, loss = 0.
+  e.g. 36 wins, 13 losses and 1 draw is 36.5 / 50 = 73%.
+- **Elo diff:** Formula above used to find `D` from score:
+
+  `D = -400 x log10(1 / score - 1)`
+  
+   A 73% score gives +173.
+- **± range:** 95% error margin
+- **Estimate:** Opponent's rating + Elo diff, e.g. 1500 + 173 = 1673.
+
+
+</details>
+
+<details>
+  <summary>How overall estimate is calculated</b></summary>
+
+The rows in [Results](#results) disagree (1824, 1673, 1600, 1707) because each has its own error.
+The overall estimate finds the single rating `R` that would be expected to score exactly the
+points Chess_bot actually scored against all of them:
+
+`sum over every opponent of  games x 1 / (1 + 10^((opponent - R) / 400))  =  points scored`
+
+The script finds `R` by bisection (try a rating, check whether the expected points are too high or
+too low, halve the range and repeat):
+
+| Opponent | Games | Expected score at 1681 | Expected points | Actual points |
+|---|---|---|---|---|
+| 1400 | 50 | 1 / (1 + 10^(-281/400)) = 0.834 | 41.7 | 46 |
+| 1500 | 50 | 1 / (1 + 10^(-181/400)) = 0.739 | 37.0 | 36.5 |
+| 1600 | 50 | 1 / (1 + 10^(-81/400)) = 0.615 | 30.7 | 25 |
+| 1700 | 50 | 1 / (1 + 10^(19/400)) = 0.473 | 23.6 | 25.5 |
+| **Total** | **200** | | **133.0** | **133** |
+
+
+</details>
+
+
+<details>
+  <summary>Why 120+1 used and how much to trust the estimate</b></summary>
+
+Stockfish's `UCI_Elo` setting is calibrated at a time control of
+120s+1s, so that's where its labels are most accurate
+
+Elo is relative so it only says how a player scores against the pool it was measured in. A weakened Stockfish is also not a real 1500 player since it plays strong moves and then deliberately picks worse ones, so it blunders differently from a human or a weak engine. That makes this a useful, repeatable yardstick for comparing versions of Chess_bot, but an approximate absolute rating nonetheless.
 
 </details>
 
