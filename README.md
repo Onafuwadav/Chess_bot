@@ -39,7 +39,7 @@
 
 ## About the Project
 
-A chess engine written from scratch in C++ with minimax search optimised with alpha-beta pruning, move ordering, quiescence search, iterative deepening and evaluation based on piece square tables. You can play it in the browser, as a UCI engine for chess GUIs, or in the terminal. Can also run matches against Stockfish to measure its strength.
+A chess engine written from scratch in C++ with minimax search optimised with alpha-beta pruning, move ordering, quiescence search, iterative deepening and evaluation based on piece square tables. You can play it in the browser, as a UCI engine for chess GUIs, or in the terminal. You can also run matches against Stockfish to measure its strength.
 
 <details>
   <summary>Screenshot</summary>
@@ -80,7 +80,7 @@ cmake --build build
 | `build/chess_cli.exe` | Play in the terminal |
 | `build/chess_uci.exe` | UCI engine for chess GUIs and matches |
 | `build/engine_tests.exe` | Perft, rules, evaluation and search tests |
-| `build/engine_tests "[slow]"` | Deep perft counts |
+| `build/engine_tests.exe "[slow]"` | Deep perft counts |
 | `build/engine_bench.exe [depth]` | Search speed on four positions at set depth |
 
 
@@ -166,6 +166,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ## Results
 <details>
   <summary>Speed</summary>
+  
 Searching four preset positions to depth 4:
 
 | Version | Positions searched | Time |
@@ -181,6 +182,7 @@ Searching four preset positions to depth 4:
 
 <details>
   <summary>Strength based on Games vs Stockfish</summary>
+  
 | Stockfish UCI_Elo | Games | W-L-D | Score | As White | As Black | Elo diff | Estimate |
 |---|---|---|---|---|---|---|---|
 | 1400 | 50 | 46-4-0 | 92% | 96% | 88% | +424 ± 316 | 1824 |
@@ -196,8 +198,7 @@ Searching four preset positions to depth 4:
 <details>
   <summary>Formulas</summary>
 
-All of these come from the standard Elo model; player rated `D` points above their opponent is
-expected to score:
+All of these come from the standard Elo model where a player rated `D` points above their opponent is expected to score:
 
 `E = 1 / (1 + 10^(-D / 400))`
 
@@ -243,8 +244,7 @@ too low, halve the range and repeat):
 <details>
   <summary>Why 120+1 used and how much to trust the estimate</summary>
 
-Stockfish's `UCI_Elo` setting is calibrated at a time control of
-120s+1s, so that's where its labels are most accurate
+Stockfish's `UCI_Elo` setting is calibrated at a time control of 120s+1s, so that's where its labels are most accurate.
 
 Elo is relative so it only says how a player scores against the pool it was measured in. A weakened Stockfish is also not a real 1500 player since it plays strong moves and then deliberately picks worse ones, so it blunders differently from a human or a weak engine. That makes this a useful, repeatable yardstick for comparing versions of Chess_bot, but an approximate absolute rating nonetheless.
 
